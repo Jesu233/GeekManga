@@ -4,6 +4,7 @@ import PiePagina from './components/PiePagina';
 import Home from './pages/Home'
 import Productos from './pages/Productos'
 import DetalleProducto from './pages/DetalleProducto';
+import Nosotros from './pages/Nosotros';
 import Carrito from './pages/Carrito';
 // ... imports de páginas
 
@@ -17,8 +18,8 @@ function App() {
 
                 <Route path= "/productos" element={<Productos/>} />
                 <Route path= "/productos/:id" element={<DetalleProducto />} />
-
-
+                <Route path= "/home" element={<Home/>} />   
+                <Route path= "/nosotros" element={<Nosotros/>} /> 
                 <Route path="/carrito" element={<Carrito/>}/>
             </Routes>
             <PiePagina />
