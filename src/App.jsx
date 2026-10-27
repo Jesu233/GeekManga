@@ -6,7 +6,8 @@ import Productos from './pages/Productos'
 import DetalleProducto from './pages/DetalleProducto';
 import Nosotros from './pages/Nosotros';
 import Carrito from './pages/Carrito';
-// ... imports de páginas
+import Blogs from './pages/Blogs'; 
+
 
 
 function App() {
@@ -15,10 +16,9 @@ function App() {
             <Encabezado />
             <Routes>
                 <Route path= "/" element={<Home/>}/>
-
+                <Route path= "/blogs" element={<Blogs/>} />
                 <Route path= "/productos" element={<Productos/>} />
                 <Route path= "/productos/:id" element={<DetalleProducto />} />
-                <Route path= "/home" element={<Home/>} />   
                 <Route path= "/nosotros" element={<Nosotros/>} /> 
                 <Route path="/carrito" element={<Carrito/>}/>
             </Routes>
