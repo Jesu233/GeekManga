@@ -3,16 +3,17 @@ import { productosDemo } from '../data/productosDemo';
 import { useCarrito } from '../context/CarritoContext';
 
 function DetalleProducto() {
-    // 1. Obtenemos el ID de la URL (ej: /productos/demo-1)
-    const { id } = useParams();
-    
-    // 2. Traemos la función para agregar del carrito
+    const { id } = useParams(); 
     const { agregarAlCarrito } = useCarrito();
 
-    // 3. Buscamos el producto en nuestro arreglo
+    // Buscamos el producto
     const producto = productosDemo.find(p => p.id === id);
 
-    // Si el producto no existe, mostramos un mensaje
+    console.log("ID de la URL:", id);
+    console.log("Productos disponibles:", productosDemo);
+    console.log("Producto encontrado:", producto);
+
+    // Si por alguna razón el ID no coincide, mostramos esto
     if (!producto) {
         return (
             <main className="container my-5 text-center">
@@ -24,17 +25,15 @@ function DetalleProducto() {
 
     return (
         <main className="container my-5">
-            {/* Breadcrumb */}
             <nav aria-label="breadcrumb" className="mb-4">
                 <ol className="breadcrumb">
                     <li className="breadcrumb-item"><Link to="/">Home</Link></li>
                     <li className="breadcrumb-item"><Link to="/productos">Productos</Link></li>
-                    <li className="breadcrumb-item active" aria-current="page">{producto.producto}</li>
+                    <li className="breadcrumb-item active">{producto.producto}</li>
                 </ol>
             </nav>
 
             <div className="row">
-                {/* Imagen del producto */}
                 <div className="col-md-6 mb-4">
                     <img 
                         src={producto.foto} 
@@ -44,7 +43,6 @@ function DetalleProducto() {
                     />
                 </div>
 
-                {/* Información del producto */}
                 <div className="col-md-6 d-flex flex-column">
                     <span className="badge bg-secondary mb-2 align-self-start">
                         {producto.categoria}
@@ -80,4 +78,4 @@ function DetalleProducto() {
     );
 }
 
-export default DetalleProducto;
+export default DetalleProducto; 
