@@ -1,13 +1,13 @@
 import { Link, NavLink } from 'react-router';
 import { Navbar, Nav, Container } from 'react-bootstrap';
 import { useCarrito } from '../context/CarritoContext';
-
+import { PATHS } from '../routes/paths';
 function Encabezado() {
     const { cantidadTotal } = useCarrito();
 
     return (
         <header>
-            {/* El logo va aquí. Tu CSS "header" le pondrá el fondo amarillo automáticamente */}
+            
             <div className="text-center pt-3">
                 <img
                     width="250"
@@ -17,10 +17,10 @@ function Encabezado() {
                 />
             </div>
 
-            {/* El Navbar de Bootstrap oscuro */}
+            
             <Navbar expand="lg" bg="dark" variant="dark">
                 <Container>
-                    <Navbar.Brand as={Link} to="/" className="fw-bold">
+                    <Navbar.Brand as={Link} to={PATHS.HOME} className="fw-bold">
                         Home
                     </Navbar.Brand>
 
@@ -28,26 +28,26 @@ function Encabezado() {
 
                     <Navbar.Collapse id="home">
                         <Nav className="ms-auto align-items-lg-center">
-                            {/* OJO: La clase 'link-pop' de tu CSS los pone naranjas */}
-                            <Nav.Link as={NavLink} to="/productos" className="link-pop">
+                            
+                            <Nav.Link as={NavLink} to={PATHS.PRODUCTOS} className="link-pop">
                                 Productos
                             </Nav.Link>
-                            <Nav.Link as={NavLink} to="/nosotros" className="link-pop">
+                            <Nav.Link as={NavLink} to={PATHS.NOSOTROS} className="link-pop">
                                 Nosotros
                             </Nav.Link>
-                            <Nav.Link as={NavLink} to="/blogs" className="link-pop">
+                            <Nav.Link as={NavLink} to={PATHS.BLOGS} className="link-pop">
                                 Blogs
                             </Nav.Link>
-                            <Nav.Link as={NavLink} to="/contacto" className="link-pop">
+                            <Nav.Link as={NavLink} to={PATHS.CONTACTO} className="link-pop">
                                 Contacto
                             </Nav.Link>
-                            <Nav.Link as={NavLink} to="/usuarios" className="link-pop">
+                            <Nav.Link as={NavLink} to={PATHS.REGISTRARSE} className="link-pop">
                                 Registrarse
                             </Nav.Link>
-                            <Nav.Link as={NavLink} to="/login" className="link-pop">
+                            <Nav.Link as={NavLink} to={PATHS.LOGIN} className="link-pop">
                                 Iniciar sesión
                             </Nav.Link>
-                            <Nav.Link as={NavLink} to="/carrito" className="link-pop">
+                            <Nav.Link as={NavLink} to={PATHS.CARRITO} className="link-pop">
                                 🛒 Carrito ({cantidadTotal})
                             </Nav.Link>
                         </Nav>

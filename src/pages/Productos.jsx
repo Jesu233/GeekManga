@@ -5,7 +5,6 @@ import TarjetaProducto from '../components/TarjetaProducto';
 import { productosDemo } from '../data/productosDemo'; 
 
 function Productos() {
-    // Usamos los datos importados
     const [productos] = useState(productosDemo);
 
     return (
