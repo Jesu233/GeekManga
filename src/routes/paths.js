@@ -10,6 +10,7 @@ export const PATHS = {
     CARRITO: '/carrito',
     CONTACTO: '/contacto',
     CATEGORIAS: '/categoria',
+    OFERTAS: '/ofertas',
     
 
     PRODUCTOS_ROUTE: '/productos/:id',        

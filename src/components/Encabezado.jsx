@@ -35,6 +35,9 @@ function Encabezado() {
                             <Nav.Link as={NavLink} to={PATHS.CATEGORIAS} className="link-pop">
                                 Categorías
                             </Nav.Link>
+                            <Nav.Link as={NavLink} to={PATHS.OFERTAS} className="link-pop">
+                                OFERTAS
+                            </Nav.Link>
                             <Nav.Link as={NavLink} to={PATHS.NOSOTROS} className="link-pop">
                                 Nosotros
                             </Nav.Link>

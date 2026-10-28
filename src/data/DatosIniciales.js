@@ -9,6 +9,8 @@ export const initialProducts = [
         stock: 12,
         stockCritico: 5,
         categoria: 'Manga',
+        oferta: true,
+        precioOferta: 1100990,
         descripcion: 'Primera edición del clásico manga de Eiichiro Oda.',
         foto: '/images/onepiece.jpg' 
     },
@@ -21,6 +23,8 @@ export const initialProducts = [
         stock: 8,
         stockCritico: 3,
         categoria: 'Figura',
+        oferta: false,
+        precioOferta: 200990,
         descripcion: 'Figura coleccionable del personaje Naruto Uzumaki.',
         foto: '/images/naruto.jpg'
     },
@@ -33,6 +37,8 @@ export const initialProducts = [
         stock: 10,
         stockCritico: 4,
         categoria: 'Comic',
+        oferta: true,
+        precioOferta: 50990,
         descripcion: 'Edición especial de Spider-Man para coleccionistas.',
         foto: '/images/spiderman.jpg' 
     },
@@ -42,9 +48,11 @@ export const initialProducts = [
         producto: 'Berserk - Tomo 1',
         precio: 18990,
         marca: 'Panini',
-        stock: 3, // Stock bajo para probar el panel de admin
+        stock: 3, 
         stockCritico: 5,
         categoria: 'Manga',
+        oferta: false,
+        precioOferta: 122990,
         descripcion: 'Obra maestra de Kentaro Miura.',
         foto: '/images/berserk.jpg' 
     }

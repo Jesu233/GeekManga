@@ -10,6 +10,7 @@ import Blogs from './pages/Blogs';
 import Contacto from './pages/Contacto';
 import CategoriaDetalle from './pages/CategoriaDetalle';
 import Categorias from './pages/Categorias';
+import Ofertas from './pages/Ofertas';
 import { PATHS } from './routes/paths';
 
 
@@ -24,6 +25,7 @@ function App() {
                 <Route path={PATHS.PRODUCTOS} element={<Productos/>} />
                 <Route path={PATHS.CONTACTO} element={<Contacto/>} />
                 <Route path="/productos/:id" element={<DetalleProducto />} />
+                <Route path={PATHS.OFERTAS} element={<Ofertas/>} />
                 <Route path={PATHS.CATEGORIAS} element={<Categorias/>} />
                 <Route path="/categorias/:nombre" element={<CategoriaDetalle/>} />
                 <Route path={PATHS.NOSOTROS} element={<Nosotros/>} /> 
