@@ -9,8 +9,10 @@ export const PATHS = {
     TIENDA: '/tienda',
     CARRITO: '/carrito',
     CONTACTO: '/contacto',
+    CATEGORIAS: '/categoria',
     
 
     PRODUCTOS_ROUTE: '/productos/:id',        
-    PRODUCTO_DETALLE: (id) => `/productos/${id}`
+    PRODUCTO_DETALLE: (id) => `/productos/${id}`,
+    CATEGORIA_DETALLE: (nombre) => `/categoria/${nombre}`
 };

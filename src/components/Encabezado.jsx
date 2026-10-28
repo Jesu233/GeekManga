@@ -7,17 +7,17 @@ function Encabezado() {
 
     return (
         <header>
-            
+
             <div className="text-center pt-3">
                 <img
                     width="250"
                     height="250"
-                    src="/images/logito.png" 
+                    src="/images/logito.png"
                     alt="logo geek&manga"
                 />
             </div>
 
-            
+
             <Navbar expand="lg" bg="dark" variant="dark">
                 <Container>
                     <Navbar.Brand as={Link} to={PATHS.HOME} className="fw-bold">
@@ -28,9 +28,12 @@ function Encabezado() {
 
                     <Navbar.Collapse id="home">
                         <Nav className="ms-auto align-items-lg-center">
-                            
+
                             <Nav.Link as={NavLink} to={PATHS.PRODUCTOS} className="link-pop">
                                 Productos
+                            </Nav.Link>
+                            <Nav.Link as={NavLink} to={PATHS.CATEGORIAS} className="link-pop">
+                                Categorías
                             </Nav.Link>
                             <Nav.Link as={NavLink} to={PATHS.NOSOTROS} className="link-pop">
                                 Nosotros
