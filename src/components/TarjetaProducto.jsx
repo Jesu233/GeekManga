@@ -21,6 +21,9 @@ function TarjetaProducto({ producto }) {
                     <p className="card-text text-muted mb-2" style={{ fontSize: '0.9rem' }}>
                         {producto.marca}
                     </p>
+                    {producto.stock === 0 && (
+                        <span className="badge bg-danger mb-2 align-self-start">Agotado</span>
+                    )}
                     <h6 className="fw-bold mb-3">
                         ${producto.precio.toLocaleString('es-CL')}
                     </h6>
