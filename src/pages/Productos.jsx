@@ -1,11 +1,16 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router';
 import TarjetaProducto from '../components/TarjetaProducto';
-// 👇 Importamos los datos desde la nueva carpeta
-import { productosDemo } from '../data/productosDemo'; 
+import { productDB } from '../data/BaseDeDatos';
 
 function Productos() {
-    const [productos] = useState(productosDemo);
+    
+    const [productos, setProductos] = useState([]);
+
+    useEffect(() => {
+        setProductos(productDB.getAll());
+    }, []);
+
 
     return (
         <main className="container my-4">

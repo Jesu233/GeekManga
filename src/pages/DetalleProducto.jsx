@@ -1,20 +1,21 @@
 import { useParams, Link } from 'react-router';
-import { productosDemo } from '../data/productosDemo';
+import { useState, useEffect } from 'react';
+import {productDB} from '../data/BaseDeDatos'; 
 import { useCarrito } from '../context/CarritoContext';
+
 
 function DetalleProducto() {
     const { id } = useParams(); 
     const { agregarAlCarrito } = useCarrito();
+    const [productos, setProductos] = useState([null]);
 
-    // Buscamos el producto
-    const producto = productosDemo.find(p => p.id === id);
+    useEffect(() => {
+        const encontrado = productDB.getById(id);
+        setProducto(encontrado);
+    }, [id]);
 
-    console.log("ID de la URL:", id);
-    console.log("Productos disponibles:", productosDemo);
-    console.log("Producto encontrado:", producto);
 
-    // Si por alguna razón el ID no coincide, mostramos esto
-    if (!producto) {
+if (!producto) {
         return (
             <main className="container my-5 text-center">
                 <h2>Producto no encontrado 😢</h2>
@@ -23,6 +24,8 @@ function DetalleProducto() {
         );
     }
 
+    
+    
     return (
         <main className="container my-5">
             <nav aria-label="breadcrumb" className="mb-4">

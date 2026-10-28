@@ -8,6 +8,7 @@ export const PATHS = {
     CONTACTO: '/contacto',
     TIENDA: '/tienda',
     CARRITO: '/carrito',
+    CONTACTO: '/contacto',
     
 
     PRODUCTOS_ROUTE: '/productos/:id',        
