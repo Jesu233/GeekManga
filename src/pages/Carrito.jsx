@@ -1,5 +1,6 @@
 import { Link } from 'react-router';
 import { useCarrito } from '../context/CarritoContext';
+import { PATHS } from '../routes/paths';
 
 function Carrito() {
     // Traemos todo lo necesario del contexto
@@ -74,7 +75,7 @@ function Carrito() {
 
                 <div className="mt-4 d-flex justify-content-between align-items-center flex-wrap gap-3">
                     <Link to="/productos" className="btn btn-outline-dark btn-lg">Seguir comprando</Link>
-                    <button type="button" className="btn btn-warning btn-lg">Comprar</button>
+                    <Link to= {PATHS.PAGO} className="btn btn-warning btn-lg">Comprar</Link>
                     <button className="btn btn-outline-dark" onClick={vaciarCarrito}>Vaciar carrito</button>
                 </div>
             </section>

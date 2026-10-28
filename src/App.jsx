@@ -11,6 +11,9 @@ import Contacto from './pages/Contacto';
 import CategoriaDetalle from './pages/CategoriaDetalle';
 import Categorias from './pages/Categorias';
 import Ofertas from './pages/Ofertas';
+import Pago from './pages/Pago';
+import PagoExitoso from './pages/PagoExitoso';
+import PagoError from './pages/PagoError'; 
 import { PATHS } from './routes/paths';
 
 
@@ -30,6 +33,9 @@ function App() {
                 <Route path="/categorias/:nombre" element={<CategoriaDetalle/>} />
                 <Route path={PATHS.NOSOTROS} element={<Nosotros/>} /> 
                 <Route path={PATHS.CARRITO} element={<Carrito/>}/>
+                <Route path={PATHS.PAGO} element={<Pago />} />
+                <Route path={PATHS.PAGO_EXITOSO} element={<PagoExitoso />} />
+                <Route path={PATHS.PAGO_ERROR} element={<PagoError />} />
 
                 
             </Routes>

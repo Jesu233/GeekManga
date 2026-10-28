@@ -15,5 +15,9 @@ export const PATHS = {
 
     PRODUCTOS_ROUTE: '/productos/:id',        
     PRODUCTO_DETALLE: (id) => `/productos/${id}`,
-    CATEGORIA_DETALLE: (nombre) => `/categoria/${nombre}`
+    CATEGORIA_DETALLE: (nombre) => `/categoria/${nombre}`,
+
+    PAGO: '/pago',
+    PAGO_EXITOSO: '/pago-exitoso',
+    PAGO_ERROR: '/pago-error',
 };
