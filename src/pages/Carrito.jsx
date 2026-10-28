@@ -3,7 +3,7 @@ import { useCarrito } from '../context/CarritoContext';
 
 function Carrito() {
     // Traemos todo lo necesario del contexto
-    const { carrito, precioTotal, agregarAlCarrito } = useCarrito();
+    const { carrito, precioTotal, agregarAlCarrito, quitarDelCarrito, vaciarCarrito } = useCarrito();
 
     // Función simple para vaciar (debes agregarla a tu contexto luego)
     // const { vaciarCarrito } = useCarrito(); 
@@ -59,6 +59,8 @@ function Carrito() {
                                     <td>${item.precio.toLocaleString('es-CL')}</td>
                                     <td>{item.cantidad}</td>
                                     <td className="fw-bold">${(item.precio * item.cantidad).toLocaleString('es-CL')}</td>
+                                    <td>
+                                        <button className="btn btn-sm btn-danger" onClick={() => quitarDelCarrito(item.id)}>❌</button></td>
                                 </tr>
                             ))}
                         </tbody>
@@ -73,6 +75,7 @@ function Carrito() {
                 <div className="mt-4 d-flex justify-content-between align-items-center flex-wrap gap-3">
                     <Link to="/productos" className="btn btn-outline-dark btn-lg">Seguir comprando</Link>
                     <button type="button" className="btn btn-warning btn-lg">Comprar</button>
+                    <button className="btn btn-outline-dark" onClick={vaciarCarrito}>Vaciar carrito</button>
                 </div>
             </section>
         </main>

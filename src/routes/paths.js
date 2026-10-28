@@ -12,5 +12,5 @@ export const PATHS = {
     
 
     PRODUCTOS_ROUTE: '/productos/:id',        
-    PRODUCTO_DETALLE: (id) => '/productos/${id}'
+    PRODUCTO_DETALLE: (id) => `/productos/${id}`
 };
