@@ -55,11 +55,28 @@ export const initialProducts = [
         precioOferta: 122990,
         descripcion: 'Obra maestra de Kentaro Miura.',
         foto: '/images/berserk.jpg' 
+    },
+    {
+        id: 'demo-5',
+        codigo: 'C002',
+        producto: 'Una chaparrita',
+        precio: 15000012345,
+        marca: 'La nona',
+        stock: 5,
+        stockCritico: 2,
+        categoria: 'Chaparrita',
+        oferta: true,
+        precioOferta: 1234567890987654321,
+        descripcion: 'Chaparrita única para coleccionistas, viene incluida con 3 gramos de queso y media vienesa, para los amantes de la chaparrita',
+        foto: '/images/chaparrita.jpg'
     }
 ];
+
+
 
 export const initialCategories = [
     { id: 1, nombre: 'Manga' },
     { id: 2, nombre: 'Figura' },
-    { id: 3, nombre: 'Comic' }
+    { id: 3, nombre: 'Comic' },
+    { id: 4, nombre: 'Chaparrita'}
 ];
