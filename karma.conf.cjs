@@ -1,29 +1,15 @@
-
-module.exports = (config) => {
-config.set({
+module.exports = function (config) {
+  config.set({
+    basePath: '',
+    frameworks: ['jasmine'],
     plugins: [
-        'karma-vite',
-        'karma-jasmine',
-        '@chiragrupani/karma-chromium-edge-launcher',
-        'karma-spec-reporter'
+      require('karma-jasmine'),
+      require('karma-chrome-launcher'),
+      require('karma-jasmine-html-reporter'),
     ],
-    frameworks: ['vite', 'jasmine'],
-    files: [
-    {
-        pattern: 'test/**/*.spec.js',
-        type: 'module',
-        watched: false,
-        served: false,
-    },
-    ],
-    browsers: ['EdgeHeadless'],
-    reporters: ['spec'],
-    singleRun: true,
-    vite: {
-        autoInit: true,
-        config: {
-        
-            }
-        }
-    });
+    files: ['src/**/*.spec.js'],
+    browsers: ['ChromeHeadless'],
+    reporters: ['progress'],
+    singleRun: false,
+  });
 };

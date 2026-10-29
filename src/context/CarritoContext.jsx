@@ -18,7 +18,10 @@ const leerCarritoGuardado = () => {
 
 export function CarritoProvider({ children }) {
     // Inicializamos con lo que haya en el storage
-    const [carrito, setCarrito] = useState(leerCarritoGuardado);
+    const [carrito, setCarrito] = useState(()=> {
+        const guardado = localStorage.getItem('geekmanga_carrito');
+        return guardado ? JSON.parse(guardado) : [];
+    })
 
     // Cada vez que cambie el carrito, lo guardamos en localStorage
     useEffect(() => {

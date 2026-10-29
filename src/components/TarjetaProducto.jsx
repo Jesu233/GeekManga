@@ -1,8 +1,8 @@
 import { Link } from 'react-router';
-import { useCarrito } from '../context/CarritoContext'; // 👈 Importamos el hook
+import { useCarrito } from '../context/CarritoContext';
 
 function TarjetaProducto({ producto }) {
-    const { agregarAlCarrito } = useCarrito(); // 👈 Traemos la función
+    const { agregarAlCarrito } = useCarrito();
 
     return (
         <div className="col">
@@ -17,13 +17,19 @@ function TarjetaProducto({ producto }) {
                     <span className="badge bg-secondary mb-2 align-self-start">
                         {producto.categoria}
                     </span>
+
+                    
+                    {producto.stock === 0 && (
+                        <span className="badge bg-danger mb-2 align-self-start">
+                            Agotado
+                        </span>
+                    )}
+
                     <h5 className="card-title">{producto.producto}</h5>
                     <p className="card-text text-muted mb-2" style={{ fontSize: '0.9rem' }}>
                         {producto.marca}
                     </p>
-                    {producto.stock === 0 && (
-                        <span className="badge bg-danger mb-2 align-self-start">Agotado</span>
-                    )}
+                    
                     <h6 className="fw-bold mb-3">
                         ${producto.precio.toLocaleString('es-CL')}
                     </h6>
@@ -32,7 +38,6 @@ function TarjetaProducto({ producto }) {
                         <Link to={`/productos/${producto.id}`} className="btn btn-outline-dark w-100">
                             Ver más
                         </Link>
-                        {/* 👇 Aquí ejecutamos la función del carrito */}
                         <button 
                             className="btn btn-warning w-100"
                             onClick={() => agregarAlCarrito(producto)}
