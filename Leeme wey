@@ -1,0 +1,10 @@
+para test que logre hacer y es lo que hay 
+
+node test-node.js (este generara pruebas unitaria, jasmine y el otro no cooperaron para las pruebas y lo intente com 3 hrs)
+
+si quieren intentar con los otros 
+ 
+npm install --save-dev karma karma-jasmine jasmine-core karma-chrome-launcher karma-jasmine-html-reporter karma-coverage (instala los pasquetes porsiacaso)
+la configuracion basica de karma ya esta 
+
+segun claude y san google estas no funcionan bien con react, tiene que ver con algo de vite y es muy egorroso y no supe hacerlo sory
