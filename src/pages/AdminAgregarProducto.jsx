@@ -35,6 +35,18 @@ function AdminAgregarProducto() {
         setFormData({ ...formData, [name]: value });
     };
 
+    const handleFotoChange = (e) => {
+        const archivo = e.target.files[0];
+        if(archivo){
+            const reader = new FileReader();
+            reader.onload = function (evento){
+                setFormData({ ...formData, foto: evento.target.result});
+
+            };
+            reader.readAsDataURL(archivo);
+        }
+    };
+
     const handleSubmit = (e) => {
         e.preventDefault();
         
@@ -73,7 +85,7 @@ function AdminAgregarProducto() {
             <EncabezadoAdmin /> {/* 👈 Agregamos el menú de admin aquí */}
 
             {/* Fondo oscuro que cubre toda la pantalla */}
-            <main className="container-fluid bg-dark text-light min-vh-100 py-4">
+            <main className="container-fluid bg-dark text-light py-4">
                 <div className="container">
                     
                     <nav aria-label="breadcrumb" className="mb-3">
@@ -127,8 +139,7 @@ function AdminAgregarProducto() {
                                 </div>
                                 <div className="col-md-12 mb-4">
                                     <label className="form-label">Foto del producto</label>
-                                    <input type="file" className="form-control" disabled />
-                                    <small className="text-muted">Para esta demo usaremos imágenes por defecto.</small>
+                                    <input type="file" accept='image/*' className='form-control' onChange={handleChange}/>
                                 </div>
                             </div>
                             {/* Botón azul igual al de tu captura */}
@@ -150,7 +161,7 @@ function AdminAgregarProducto() {
                                         <p className="small mb-1">Stock: {prod.stock}</p>
                                         
                                         <div className="d-flex gap-2 mt-3">
-                                            <button className="btn btn-warning btn-sm w-50">Editar</button>
+                                            <Link to={`/admin/editar-producto/${prod.id}`} className="btn btn-warning btn-sm w-50">Editar</Link>
                                             <button onClick={() => handleEliminar(prod.id)} className="btn btn-danger btn-sm w-50">Eliminar</button>
                                         </div>
                                     </div>

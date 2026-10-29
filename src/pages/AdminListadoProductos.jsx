@@ -38,7 +38,7 @@ function AdminListadoProductos() {
             <EncabezadoAdmin /> 
 
             {/* container-fluid para que el fondo oscuro ocupe toda la pantalla */}
-            <main className="container-fluid bg-dark text-light min-vh-100 py-4">
+            <main className="container-fluid bg-dark text-light py-4">
                 <div className="container"> {/* container normal para que el contenido no se estire */}
                     
                     <nav aria-label="breadcrumb" className="mb-3">
@@ -84,7 +84,7 @@ function AdminListadoProductos() {
                                             </p>
                                             
                                             <div className="d-flex gap-2 mt-3">
-                                                <button className="btn btn-warning btn-sm w-50">Editar</button>
+                                                <Link to={`/admin/editar-producto/${prod.id}`} className="btn btn-warning btn-sm w-50">Editar</Link>
                                                 <button 
                                                     onClick={() => handleEliminar(prod.id)} 
                                                     className="btn btn-danger btn-sm w-50"

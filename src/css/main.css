@@ -3,6 +3,15 @@ body{
     display: flex;
     flex-direction: column;
     margin: 0;
+    background-color: #212529;
+}
+
+#root{
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    flex: 1;
+    background-color: #212529;
 }
 
 main {
@@ -335,4 +344,16 @@ a:hover{
 
 .link-pop:active {
     transform: translateY(1px); 
+}
+
+/* Estilo para el enlace de Home Admin en los breadcrumbs */
+.breadcrumb-item a {
+    color: #fdc201; /* Amarillo por defecto */
+    text-decoration: none;
+    transition: color 0.2s ease-in-out;
+}
+
+.breadcrumb-item a:hover {
+    color: #ff07c9; /* Rosa neón al pasar el mouse (como tenías en tu CSS original) */
+    text-decoration: underline;
 }

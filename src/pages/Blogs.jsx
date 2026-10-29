@@ -26,7 +26,7 @@ function Blogs() {
                                 <h2 className="h4 card-title">{post.titulo}</h2>
                                 <p className="card-text">{post.descripcion}</p>
                                 
-                                <Link to={post.ruta} className="btn btn-warning">
+                                <Link to={`/blog/${post.id}`} className="btn btn-warning">
                                     Ver caso
                                 </Link>
                             </div>
