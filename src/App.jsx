@@ -15,7 +15,11 @@ import Pago from './pages/Pago';
 import PagoExitoso from './pages/PagoExitoso';
 import PagoError from './pages/PagoError'; 
 import { PATHS } from './routes/paths';
-
+import Login from './pages/Login';
+import AdminAgregarProducto from './pages/AdminAgregarProducto';
+import AdminPanel from './pages/AdminPanel';
+import AdminListadoProductos from './pages/AdminListadoProductos';
+import Registro from './pages/Registro';
 
 
 function App() {
@@ -23,11 +27,12 @@ function App() {
         <BrowserRouter>
             <Encabezado />
             <Routes>
+                
                 <Route path={PATHS.HOME} element={<Home/>}/>
                 <Route path={PATHS.BLOGS} element={<Blogs/>} />
                 <Route path={PATHS.PRODUCTOS} element={<Productos/>} />
                 <Route path={PATHS.CONTACTO} element={<Contacto/>} />
-                <Route path="/productos/:id" element={<DetalleProducto />} />
+                <Route path={PATHS.PRODUCTOS_ROUTE} element={<DetalleProducto/>} />
                 <Route path={PATHS.OFERTAS} element={<Ofertas/>} />
                 <Route path={PATHS.CATEGORIAS} element={<Categorias/>} />
                 <Route path="/categorias/:nombre" element={<CategoriaDetalle/>} />
@@ -36,8 +41,12 @@ function App() {
                 <Route path={PATHS.PAGO} element={<Pago />} />
                 <Route path={PATHS.PAGO_EXITOSO} element={<PagoExitoso />} />
                 <Route path={PATHS.PAGO_ERROR} element={<PagoError />} />
+                <Route path={PATHS.LOGIN} element={<Login/>}/>
+                <Route path="/admin/agregar-producto" element={<AdminAgregarProducto/>}/>
+                <Route path="/admin" element={<AdminPanel/>}/>
+                <Route path="/admin/listado" element={<AdminListadoProductos/>}/>
+                <Route path={PATHS.REGISTRARSE} element={<Registro/>}/>
 
-                
             </Routes>
             <PiePagina />
         </BrowserRouter>

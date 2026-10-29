@@ -3,6 +3,7 @@ import { Link } from 'react-router';
 import TarjetaProducto from '../components/TarjetaProducto';
 import { productDB } from '../data/BaseDeDatos';
 
+
 function Productos() {
     
     const [productos, setProductos] = useState([]);

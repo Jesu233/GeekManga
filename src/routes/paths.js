@@ -8,10 +8,10 @@ export const PATHS = {
     CONTACTO: '/contacto',
     TIENDA: '/tienda',
     CARRITO: '/carrito',
-    CONTACTO: '/contacto',
     CATEGORIAS: '/categoria',
     OFERTAS: '/ofertas',
-    
+    LOGIN: '/login',
+    REGISTRARSE: "/registro",
 
     PRODUCTOS_ROUTE: '/productos/:id',        
     PRODUCTO_DETALLE: (id) => `/productos/${id}`,

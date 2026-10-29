@@ -2,7 +2,18 @@ import { Link, NavLink } from 'react-router';
 import { Navbar, Nav, Container } from 'react-bootstrap';
 import { useCarrito } from '../context/CarritoContext';
 import { PATHS } from '../routes/paths';
+import { useLocation } from 'react-router';
+
 function Encabezado() {
+    //para reconocer si estamos en admin o nelpastel de esta forma se ve que encabezado usar si el normalito osea este o el de admin
+    const location = useLocation();
+
+    if(location.pathname.startsWith('/admin')){
+        return null;
+    }
+
+
+
     const { cantidadTotal } = useCarrito();
 
     return (
