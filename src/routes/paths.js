@@ -1,5 +1,3 @@
-
-
 export const PATHS = {
     HOME: '/',
     NOSOTROS: '/nosotros',
@@ -12,12 +10,18 @@ export const PATHS = {
     OFERTAS: '/ofertas',
     LOGIN: '/login',
     REGISTRARSE: "/registro",
-
-    PRODUCTOS_ROUTE: '/productos/:id',        
+    PRODUCTOS_ROUTE: '/productos/:id',
     PRODUCTO_DETALLE: (id) => `/productos/${id}`,
     CATEGORIA_DETALLE: (nombre) => `/categoria/${nombre}`,
-
     PAGO: '/pago',
     PAGO_EXITOSO: '/pago-exitoso',
     PAGO_ERROR: '/pago-error',
+
+    // Administración
+    ADMIN: '/admin',
+    ADMIN_AGREGAR_PRODUCTO: '/admin/agregar-producto',
+    ADMIN_EDITAR_PRODUCTO_ROUTE: '/admin/editar-producto/:id',
+    ADMIN_EDITAR_PRODUCTO: (id) => `/admin/editar-producto/${id}`,
+    ADMIN_LISTADO: '/admin/listado',
+    ADMIN_USUARIOS: '/admin/usuarios',
 };

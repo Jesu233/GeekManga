@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import Login from '../src/pages/Login';
+import { useAuth } from '../src/context/AuthContext';
 
 // Mock de useNavigate: así comprobamos a dónde redirige sin navegar de verdad
 const { navigateMock } = vi.hoisted(() => ({ navigateMock: vi.fn() }));
@@ -11,17 +12,16 @@ vi.mock('react-router', async () => {
     return { ...actual, useNavigate: () => navigateMock };
 });
 
-const clienteGuardado = {
-    id: 'user-1',
-    nombre: 'Ana',
-    correo: 'ana@correo.cl',
-    password: 'clave123',
-    tipoUsuario: 'Cliente',
-};
+// Mock de la sesión: login() simula la respuesta del backend
+vi.mock('../src/context/AuthContext', () => ({
+    useAuth: vi.fn(),
+}));
 
-const renderLogin = () =>
+const loginMock = vi.fn();
+
+const renderLogin = (estado) =>
     render(
-        <MemoryRouter>
+        <MemoryRouter initialEntries={[{ pathname: '/login', state: estado }]}>
             <Login />
         </MemoryRouter>
     );
@@ -33,9 +33,9 @@ const iniciarSesion = async (user, correo, password) => {
 };
 
 beforeEach(() => {
-    localStorage.clear();
-    sessionStorage.clear();
     navigateMock.mockClear();
+    loginMock.mockReset();
+    useAuth.mockReturnValue({ login: loginMock });
 });
 
 describe('Login - validaciones del formulario', () => {
@@ -47,10 +47,10 @@ describe('Login - validaciones del formulario', () => {
 
         expect(screen.getByText('El correo es obligatorio.')).toBeInTheDocument();
         expect(screen.getByText('La contraseña es obligatoria.')).toBeInTheDocument();
-        expect(navigateMock).not.toHaveBeenCalled();
+        expect(loginMock).not.toHaveBeenCalled();
     });
 
-    it('marca el input de correo como inválido cuando falta', async () => {
+    it('marca los inputs como inválidos cuando faltan', async () => {
         const user = userEvent.setup();
         renderLogin();
 
@@ -60,103 +60,76 @@ describe('Login - validaciones del formulario', () => {
         expect(screen.getByLabelText('Contraseña')).toHaveClass('is-invalid');
     });
 
-    it('rechaza un correo con formato inválido', async () => {
+    it('rechaza un correo con formato inválido sin llamar al backend', async () => {
         const user = userEvent.setup();
         renderLogin();
 
         await iniciarSesion(user, 'correo-sin-arroba', 'clave123');
 
         expect(screen.getByText('El formato del correo no es válido.')).toBeInTheDocument();
-        expect(navigateMock).not.toHaveBeenCalled();
-    });
-
-    it('no muestra mensajes de error antes de enviar el formulario', () => {
-        renderLogin();
-
-        expect(screen.queryByText('El correo es obligatorio.')).not.toBeInTheDocument();
-        expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+        expect(loginMock).not.toHaveBeenCalled();
     });
 });
 
-describe('Login - autenticación y redirección', () => {
-    it('muestra una alerta si las credenciales son incorrectas', async () => {
+describe('Login - conexión con el backend', () => {
+    it('envía el correo normalizado y la contraseña', async () => {
         const user = userEvent.setup();
+        loginMock.mockResolvedValue({ nombre: 'Ana', rol: 'USER' });
         renderLogin();
 
-        await iniciarSesion(user, 'nadie@correo.cl', 'mala');
+        await iniciarSesion(user, '  Ana@Correo.CL ', 'clave123');
 
-        expect(screen.getByRole('alert')).toHaveTextContent('Correo o contraseña incorrectos.');
-        expect(sessionStorage.getItem('usuarioActivo')).toBeNull();
-        expect(navigateMock).not.toHaveBeenCalled();
+        expect(loginMock).toHaveBeenCalledWith('ana@correo.cl', 'clave123');
     });
 
-    it('el administrador por defecto inicia sesión y va a /admin', async () => {
+    it('redirige al Home a un cliente (USER)', async () => {
         const user = userEvent.setup();
-        renderLogin();
-
-        await iniciarSesion(user, 'admin@gmail.com', 'admin123');
-
-        const sesion = JSON.parse(sessionStorage.getItem('usuarioActivo'));
-        expect(sesion).toMatchObject({ correo: 'admin@gmail.com', tipoUsuario: 'Administrador' });
-        expect(sesion.password).toBeUndefined(); // la contraseña no se guarda en la sesión
-        expect(navigateMock).toHaveBeenCalledWith('/admin');
-    });
-
-    it('un cliente registrado inicia sesión y va al Home', async () => {
-        localStorage.setItem('usuarios', JSON.stringify([clienteGuardado]));
-        const user = userEvent.setup();
+        loginMock.mockResolvedValue({ nombre: 'Ana', rol: 'USER' });
         renderLogin();
 
         await iniciarSesion(user, 'ana@correo.cl', 'clave123');
 
-        expect(JSON.parse(sessionStorage.getItem('usuarioActivo'))).toMatchObject({
-            nombre: 'Ana',
-            tipoUsuario: 'Cliente',
-        });
         expect(navigateMock).toHaveBeenCalledWith('/');
     });
 
-    it('un vendedor también es redirigido a /admin', async () => {
-        localStorage.setItem(
-            'usuarios',
-            JSON.stringify([{ ...clienteGuardado, id: 'user-2', correo: 'vende@correo.cl', tipoUsuario: 'Vendedor' }])
-        );
+    it.each(['ADMIN', 'VENDEDOR'])('redirige al panel a un %s', async (rol) => {
         const user = userEvent.setup();
+        loginMock.mockResolvedValue({ nombre: 'Staff', rol });
         renderLogin();
 
-        await iniciarSesion(user, 'vende@correo.cl', 'clave123');
+        await iniciarSesion(user, 'staff@gmail.com', 'clave123');
 
         expect(navigateMock).toHaveBeenCalledWith('/admin');
     });
 
-    it('normaliza el correo a minúsculas antes de buscar al usuario', async () => {
+    it('vuelve a la página protegida que se intentó visitar', async () => {
         const user = userEvent.setup();
-        renderLogin();
+        loginMock.mockResolvedValue({ nombre: 'Ana', rol: 'USER' });
+        renderLogin({ desde: '/pago' });
 
-        await iniciarSesion(user, 'ADMIN@GMAIL.COM', 'admin123');
+        await iniciarSesion(user, 'ana@correo.cl', 'clave123');
 
-        expect(navigateMock).toHaveBeenCalledWith('/admin');
+        expect(navigateMock).toHaveBeenCalledWith('/pago', { replace: true });
     });
 
-    it('si los usuarios guardados están corruptos, igual permite entrar como administrador', async () => {
-        localStorage.setItem('usuarios', '{esto-no-es-json');
+    it('muestra un error si el backend responde 401', async () => {
         const user = userEvent.setup();
+        loginMock.mockRejectedValue({ response: { status: 401, data: {} } });
         renderLogin();
 
-        await iniciarSesion(user, 'admin@gmail.com', 'admin123');
+        await iniciarSesion(user, 'ana@correo.cl', 'mala');
 
-        expect(navigateMock).toHaveBeenCalledWith('/admin');
-        // El admin por defecto se vuelve a guardar con un JSON válido
-        expect(JSON.parse(localStorage.getItem('usuarios'))).toHaveLength(1);
+        expect(await screen.findByRole('alert')).toHaveTextContent('Correo o contraseña incorrectos.');
+        expect(navigateMock).not.toHaveBeenCalled();
     });
 
-    it('crea el administrador por defecto en localStorage la primera vez', async () => {
+    it('avisa cuando el backend no responde', async () => {
         const user = userEvent.setup();
+        loginMock.mockRejectedValue(new Error('Network Error'));
         renderLogin();
 
-        await iniciarSesion(user, 'admin@gmail.com', 'admin123');
+        await iniciarSesion(user, 'ana@correo.cl', 'clave123');
 
-        const usuarios = JSON.parse(localStorage.getItem('usuarios'));
-        expect(usuarios.some((u) => u.correo === 'admin@gmail.com')).toBe(true);
+        expect(await screen.findByRole('alert')).toHaveTextContent('No se pudo conectar con el servidor');
     });
 });

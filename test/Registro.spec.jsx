@@ -1,15 +1,14 @@
-import { render, screen, fireEvent, act } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import Registro from '../src/pages/Registro';
+import { useAuth } from '../src/context/AuthContext';
 
-// Mock de useNavigate para comprobar la redirección al login
-const { navigateMock } = vi.hoisted(() => ({ navigateMock: vi.fn() }));
+vi.mock('../src/context/AuthContext', () => ({
+    useAuth: vi.fn(),
+}));
 
-vi.mock('react-router', async () => {
-    const actual = await vi.importActual('react-router');
-    return { ...actual, useNavigate: () => navigateMock };
-});
+const registrarMock = vi.fn();
 
 const renderRegistro = () =>
     render(
@@ -18,133 +17,105 @@ const renderRegistro = () =>
         </MemoryRouter>
     );
 
-// Los <label> de este formulario no están asociados a los inputs (sin htmlFor),
-// por eso se buscan los campos por su atributo name.
-const campo = (container, name) => container.querySelector(`input[name="${name}"]`);
-
-const llenarFormulario = async (user, container, datos) => {
-    for (const [name, valor] of Object.entries(datos)) {
-        await user.type(campo(container, name), valor);
+const completar = async (user, datos) => {
+    const campos = {
+        Nombre: datos.nombre,
+        Apellidos: datos.apellidos,
+        RUN: datos.run,
+        'Correo Electrónico': datos.correo,
+        Contraseña: datos.password,
+        'Confirmar Contraseña': datos.confirmar,
+    };
+    for (const [label, valor] of Object.entries(campos)) {
+        if (valor) await user.type(screen.getByLabelText(label), valor);
     }
+    await user.click(screen.getByRole('button', { name: 'Registrarse' }));
 };
 
-const datosValidos = {
+const validos = {
     nombre: 'Ana',
     apellidos: 'Pérez',
     run: '12345678-9',
     correo: 'Ana@Correo.cl',
     password: 'clave123',
-    confirmarPassword: 'clave123',
+    confirmar: 'clave123',
 };
 
 beforeEach(() => {
-    localStorage.clear();
-    navigateMock.mockClear();
-});
-
-afterEach(() => {
-    vi.useRealTimers();
-});
-
-describe('Registro - renderizado', () => {
-    it('muestra todos los campos del formulario y el botón de registro', () => {
-        const { container } = renderRegistro();
-
-        ['nombre', 'apellidos', 'run', 'correo', 'password', 'confirmarPassword'].forEach((name) => {
-            expect(campo(container, name)).toBeInTheDocument();
-        });
-        expect(screen.getByRole('button', { name: 'Registrarse' })).toBeInTheDocument();
-        expect(screen.getByRole('link', { name: /inicia sesión aquí/i })).toHaveAttribute('href', '/login');
-    });
-
-    it('actualiza el estado del formulario mientras el usuario escribe', async () => {
-        const user = userEvent.setup();
-        const { container } = renderRegistro();
-
-        await user.type(campo(container, 'nombre'), 'Ana');
-        await user.type(campo(container, 'run'), '12345678-9');
-
-        expect(campo(container, 'nombre')).toHaveValue('Ana');
-        expect(campo(container, 'run')).toHaveValue('12345678-9');
-    });
+    registrarMock.mockReset();
+    useAuth.mockReturnValue({ registrar: registrarMock });
 });
 
 describe('Registro - validaciones', () => {
-    it('muestra error si faltan nombre, correo o contraseña', () => {
-        const { container } = renderRegistro();
+    it('exige nombre, RUN, correo y contraseña', async () => {
+        const user = userEvent.setup();
+        renderRegistro();
 
-        // fireEvent.submit evita la validación nativa de los atributos "required"
-        // y permite ejecutar la validación propia del componente.
-        fireEvent.submit(container.querySelector('form'));
+        await completar(user, { nombre: 'Ana' });
 
-        expect(screen.getByText('El nombre, correo y contraseña son obligatorios.')).toBeInTheDocument();
-        expect(localStorage.getItem('usuarios')).toBeNull();
+        expect(screen.getByRole('alert')).toHaveTextContent('El nombre, RUN, correo y contraseña son obligatorios.');
+        expect(registrarMock).not.toHaveBeenCalled();
     });
 
-    it('muestra error si las contraseñas no coinciden', async () => {
+    it('valida el formato del RUN', async () => {
         const user = userEvent.setup();
-        const { container } = renderRegistro();
+        renderRegistro();
 
-        await llenarFormulario(user, container, {
-            ...datosValidos,
-            confirmarPassword: 'otra-clave',
-        });
-        await user.click(screen.getByRole('button', { name: 'Registrarse' }));
+        await completar(user, { ...validos, run: '12.345.678' });
 
-        expect(screen.getByText('Las contraseñas no coinciden.')).toBeInTheDocument();
-        expect(localStorage.getItem('usuarios')).toBeNull();
-        expect(navigateMock).not.toHaveBeenCalled();
+        expect(screen.getByRole('alert')).toHaveTextContent('El RUN debe ir sin puntos y con guion');
     });
 
-    it('rechaza un correo que ya está registrado (sin importar mayúsculas)', async () => {
-        localStorage.setItem('usuarios', JSON.stringify([{ id: 'user-1', correo: 'ana@correo.cl' }]));
+    it('valida que las contraseñas coincidan', async () => {
         const user = userEvent.setup();
-        const { container } = renderRegistro();
+        renderRegistro();
 
-        await llenarFormulario(user, container, datosValidos);
-        await user.click(screen.getByRole('button', { name: 'Registrarse' }));
+        await completar(user, { ...validos, confirmar: 'otra123' });
 
-        expect(screen.getByText(/este correo ya está registrado/i)).toBeInTheDocument();
-        expect(JSON.parse(localStorage.getItem('usuarios'))).toHaveLength(1);
+        expect(screen.getByRole('alert')).toHaveTextContent('Las contraseñas no coinciden.');
+        expect(registrarMock).not.toHaveBeenCalled();
     });
 });
 
-describe('Registro - creación de la cuenta', () => {
-    it('guarda un usuario de tipo Cliente con el correo normalizado', async () => {
+describe('Registro - conexión con el backend', () => {
+    it('envía los datos al backend con el correo normalizado', async () => {
         const user = userEvent.setup();
-        const { container } = renderRegistro();
+        registrarMock.mockResolvedValue({ nombre: 'Ana', rol: 'USER' });
+        renderRegistro();
 
-        await llenarFormulario(user, container, datosValidos);
-        await user.click(screen.getByRole('button', { name: 'Registrarse' }));
+        await completar(user, validos);
 
-        const usuarios = JSON.parse(localStorage.getItem('usuarios'));
-        expect(usuarios).toHaveLength(1);
-        expect(usuarios[0]).toMatchObject({
+        expect(registrarMock).toHaveBeenCalledWith({
             nombre: 'Ana',
             apellidos: 'Pérez',
+            run: '12345678-9',
             correo: 'ana@correo.cl',
-            tipoUsuario: 'Cliente',
+            password: 'clave123',
         });
-        expect(usuarios[0].id).toMatch(/^user-/);
+        expect(await screen.findByRole('status')).toHaveTextContent('¡Cuenta creada con éxito!');
     });
 
-    it('muestra el mensaje de éxito y redirige al login después de 2 segundos', async () => {
+    it('muestra el mensaje del backend cuando el correo ya existe (409)', async () => {
         const user = userEvent.setup();
-        const { container } = renderRegistro();
-
-        // Se escribe con timers reales; los falsos se activan justo antes de enviar,
-        // porque user-event se bloquea si se usa con vi.useFakeTimers().
-        await llenarFormulario(user, container, datosValidos);
-        vi.useFakeTimers();
-        fireEvent.click(screen.getByRole('button', { name: 'Registrarse' }));
-
-        expect(screen.getByText(/cuenta creada con éxito/i)).toBeInTheDocument();
-        expect(navigateMock).not.toHaveBeenCalled(); // todavía no pasan los 2 segundos
-
-        act(() => {
-            vi.advanceTimersByTime(2000);
+        registrarMock.mockRejectedValue({
+            response: { status: 409, data: { mensaje: 'El correo ana@correo.cl ya está registrado' } },
         });
+        renderRegistro();
 
-        expect(navigateMock).toHaveBeenCalledWith('/login');
+        await completar(user, validos);
+
+        expect(await screen.findByRole('alert')).toHaveTextContent('El correo ana@correo.cl ya está registrado');
+    });
+
+    it('muestra los errores por campo que devuelve el backend (400)', async () => {
+        const user = userEvent.setup();
+        registrarMock.mockRejectedValue({
+            response: { status: 400, data: { mensaje: 'Revisa los campos', campos: { nombre: 'Nombre demasiado largo' } } },
+        });
+        renderRegistro();
+
+        await completar(user, validos);
+
+        expect(await screen.findByRole('alert')).toHaveTextContent('Nombre demasiado largo');
     });
 });

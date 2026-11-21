@@ -1,24 +1,29 @@
-import { Link, NavLink } from 'react-router';
-import { Navbar, Nav, Container } from 'react-bootstrap';
+import { Link, NavLink, useLocation, useNavigate } from 'react-router';
+import { Navbar, Nav, Container, NavDropdown } from 'react-bootstrap';
 import { useCarrito } from '../context/CarritoContext';
+import { useAuth } from '../context/AuthContext';
 import { PATHS } from '../routes/paths';
-import { useLocation } from 'react-router';
+import { NOMBRE_ROL, ROLES } from '../services/roles';
 
 function Encabezado() {
-    //para reconocer si estamos en admin o nelpastel de esta forma se ve que encabezado usar si el normalito osea este o el de admin
+    // Los hooks siempre se llaman primero (React no permite llamarlos después de un return)
     const location = useLocation();
+    const navigate = useNavigate();
+    const { cantidadTotal } = useCarrito();
+    const { usuario, logout, tieneRol } = useAuth();
 
-    if(location.pathname.startsWith('/admin')){
+    // En las rutas /admin se usa EncabezadoAdmin, así que este no se muestra
+    if (location.pathname.startsWith('/admin')) {
         return null;
     }
 
-
-
-    const { cantidadTotal } = useCarrito();
+    const cerrarSesion = () => {
+        logout();
+        navigate(PATHS.HOME);
+    };
 
     return (
         <header>
-
             <div className="text-center pt-3">
                 <img
                     width="250"
@@ -27,7 +32,6 @@ function Encabezado() {
                     alt="logo geek&manga"
                 />
             </div>
-
 
             <Navbar expand="lg" bg="dark" variant="dark">
                 <Container>
@@ -39,7 +43,6 @@ function Encabezado() {
 
                     <Navbar.Collapse id="home">
                         <Nav className="ms-auto align-items-lg-center">
-
                             <Nav.Link as={NavLink} to={PATHS.PRODUCTOS} className="link-pop">
                                 Productos
                             </Nav.Link>
@@ -58,12 +61,41 @@ function Encabezado() {
                             <Nav.Link as={NavLink} to={PATHS.CONTACTO} className="link-pop">
                                 Contacto
                             </Nav.Link>
-                            <Nav.Link as={NavLink} to={PATHS.REGISTRARSE} className="link-pop">
-                                Registrarse
-                            </Nav.Link>
-                            <Nav.Link as={NavLink} to={PATHS.LOGIN} className="link-pop">
-                                Iniciar sesión
-                            </Nav.Link>
+
+                            {usuario ? (
+                                <>
+                                    {/* Solo ADMIN y VENDEDOR ven el acceso al panel */}
+                                    {tieneRol(ROLES.ADMIN, ROLES.VENDEDOR) && (
+                                        <Nav.Link as={NavLink} to={PATHS.ADMIN} className="link-pop">
+                                            Panel
+                                        </Nav.Link>
+                                    )}
+                                    <NavDropdown
+                                        title={`👤 ${usuario.nombre}`}
+                                        id="menu-usuario"
+                                        align="end"
+                                        menuVariant="dark"
+                                    >
+                                        <NavDropdown.ItemText className="small text-secondary">
+                                            {usuario.correo} · {NOMBRE_ROL[usuario.rol] || usuario.rol}
+                                        </NavDropdown.ItemText>
+                                        <NavDropdown.Divider />
+                                        <NavDropdown.Item as="button" onClick={cerrarSesion}>
+                                            Cerrar sesión
+                                        </NavDropdown.Item>
+                                    </NavDropdown>
+                                </>
+                            ) : (
+                                <>
+                                    <Nav.Link as={NavLink} to={PATHS.REGISTRARSE} className="link-pop">
+                                        Registrarse
+                                    </Nav.Link>
+                                    <Nav.Link as={NavLink} to={PATHS.LOGIN} className="link-pop">
+                                        Iniciar sesión
+                                    </Nav.Link>
+                                </>
+                            )}
+
                             <Nav.Link as={NavLink} to={PATHS.CARRITO} className="link-pop">
                                 🛒 Carrito ({cantidadTotal})
                             </Nav.Link>

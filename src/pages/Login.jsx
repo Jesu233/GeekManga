@@ -1,17 +1,23 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router';
+import { Link, useLocation, useNavigate } from 'react-router';
+import { useAuth } from '../context/AuthContext';
+import { mensajeDeError } from '../services/api';
+import { ROLES } from '../services/roles';
+import { PATHS } from '../routes/paths';
 
 function Login() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    
     const [errorEmail, setErrorEmail] = useState('');
     const [errorPassword, setErrorPassword] = useState('');
     const [alerta, setAlerta] = useState('');
-    
-    const navigate = useNavigate();
+    const [enviando, setEnviando] = useState(false);
 
-    const handleSubmit = (e) => {
+    const { login } = useAuth();
+    const navigate = useNavigate();
+    const location = useLocation();
+
+    const handleSubmit = async (e) => {
         e.preventDefault();
         setErrorEmail('');
         setErrorPassword('');
@@ -19,7 +25,7 @@ function Login() {
 
         let formularioValido = true;
 
-        // 1. Validaciones básicas
+        // 1. Validaciones básicas (antes de llamar al backend)
         if (!email.trim()) {
             setErrorEmail('El correo es obligatorio.');
             formularioValido = false;
@@ -35,58 +41,27 @@ function Login() {
 
         if (!formularioValido) return;
 
-        // 2. Lógica extraída de tu login.js original
-        let usuarios = [];
+        // 2. Login contra el backend: POST /api/v1/auth/login
+        //    AuthContext guarda el JWT y los datos del usuario.
+        setEnviando(true);
         try {
-            usuarios = JSON.parse(localStorage.getItem('usuarios')) || [];
+            const usuario = await login(email.trim().toLowerCase(), password);
+
+            // 3. Redirección: a la página que se quería visitar o según el rol
+            const desde = location.state?.desde;
+            if (desde) {
+                navigate(desde, { replace: true });
+            } else if (usuario.rol === ROLES.ADMIN || usuario.rol === ROLES.VENDEDOR) {
+                navigate(PATHS.ADMIN);
+            } else {
+                navigate(PATHS.HOME);
+            }
         } catch (error) {
-            usuarios = [];
-        }
-
-        const correoNormalizado = email.trim().toLowerCase();
-        const passwordIngresada = password;
-
-        // Creamos el admin por defecto si no existe
-        const adminPorDefecto = {
-            id: 'admin-1',
-            nombre: 'Administrador',
-            correo: 'admin@gmail.com',
-            password: 'admin123',
-            tipoUsuario: 'Administrador'
-        };
-
-        const existeAdmin = usuarios.some((u) => u.correo === adminPorDefecto.correo);
-        if (!existeAdmin) {
-            usuarios.push(adminPorDefecto);
-            localStorage.setItem('usuarios', JSON.stringify(usuarios));
-        }
-
-        // Buscamos al usuario
-        const usuario = usuarios.find(
-            (u) => u.correo === correoNormalizado && u.password === passwordIngresada
-        );
-
-        if (!usuario) {
-            setAlerta('Correo o contraseña incorrectos.');
-            return;
-        }
-
-        // 3. Guardamos la sesión (como en tu JS original, en sessionStorage)
-        sessionStorage.setItem(
-            'usuarioActivo',
-            JSON.stringify({
-                id: usuario.id,
-                nombre: usuario.nombre,
-                correo: usuario.correo,
-                tipoUsuario: usuario.tipoUsuario
-            })
-        );
-
-        // 4. Redirección según el tipo de usuario
-        if (usuario.tipoUsuario === 'Administrador' || usuario.tipoUsuario === 'Vendedor') {
-            navigate('/admin'); // En React lo mandamos a nuestra ruta de Admin
-        } else {
-            navigate('/'); // En React lo mandamos al Home de la tienda
+            setAlerta(error?.response?.status === 401
+                ? 'Correo o contraseña incorrectos.'
+                : mensajeDeError(error));
+        } finally {
+            setEnviando(false);
         }
     };
 
@@ -102,9 +77,9 @@ function Login() {
             <div className="container-login">
                 <h2 className="text-center">Inicio de sesión</h2>
 
-                <form 
-                    onSubmit={handleSubmit} 
-                    noValidate 
+                <form
+                    onSubmit={handleSubmit}
+                    noValidate
                     className="bg-dark p-4 my-4 rounded shadow-sm mx-auto border border-secondary"
                 >
                     {alerta && (
@@ -115,34 +90,36 @@ function Login() {
 
                     <div className="mb-3">
                         <label htmlFor="email" className="form-label text-light">Correo</label>
-                        <input 
-                            type="email" 
-                            id="email" 
-                            name="email" 
+                        <input
+                            type="email"
+                            id="email"
+                            name="email"
                             maxLength="100"
                             className={`form-control bg-dark text-light ${errorEmail ? 'is-invalid' : ''}`}
                             value={email}
-                            onChange={(e) => setEmail(e.target.value)} 
+                            onChange={(e) => setEmail(e.target.value)}
                         />
                         {errorEmail && <div className="invalid-feedback">{errorEmail}</div>}
                     </div>
 
                     <div className="mb-3">
                         <label htmlFor="password" className="form-label text-light">Contraseña</label>
-                        <input 
-                            type="password" 
-                            id="password" 
-                            name="password" 
-                            maxLength="10"
+                        <input
+                            type="password"
+                            id="password"
+                            name="password"
+                            maxLength="100"
                             className={`form-control bg-dark text-light ${errorPassword ? 'is-invalid' : ''}`}
                             value={password}
-                            onChange={(e) => setPassword(e.target.value)} 
+                            onChange={(e) => setPassword(e.target.value)}
                         />
                         {errorPassword && <div className="invalid-feedback">{errorPassword}</div>}
                     </div>
 
-                    <button type="submit" className="btn btn-warning btn-lg w-100">Iniciar sesión</button>
-                    
+                    <button type="submit" className="btn btn-warning btn-lg w-100" disabled={enviando}>
+                        {enviando ? 'Ingresando...' : 'Iniciar sesión'}
+                    </button>
+
                     <p className="text-light mt-3 mb-0 text-center">
                         ¿No tienes cuenta? <Link to="/registro" className="text-warning">Regístrate aquí</Link>
                     </p>

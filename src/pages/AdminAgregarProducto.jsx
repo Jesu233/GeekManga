@@ -22,11 +22,6 @@ function AdminAgregarProducto() {
 
     // 1. Protegemos la ruta y cargamos productos
     useEffect(() => {
-        const usuarioStr = sessionStorage.getItem("usuarioActivo");
-        if (!usuarioStr) {
-            navigate('/login');
-            return;
-        }
         setProductos(productDB.getAll());
     }, [navigate]);
 
@@ -175,4 +170,4 @@ function AdminAgregarProducto() {
     );
 }
 
-export default AdminAgregarProducto;
+export default AdminAgregarProducto;

@@ -12,17 +12,6 @@ function AdminPanel() {
 
     // Protegemos la ruta y cargamos los datos
     useEffect(() => {
-        const usuarioStr = sessionStorage.getItem("usuarioActivo");
-        if(!usuarioStr){
-            navigate('/login');
-            return;
-        }
-        const usuario = JSON.parse(usuarioStr);
-        if(usuario.tipoUsuario !== 'Administrador' && usuario.tipoUsuario !== 'Vendedor'){
-            navigate('/');
-            return;
-        }
-
         // Cargamos los datos reales para el resumen
         const productos = productDB.getAll() || [];
         const usuarios = JSON.parse(localStorage.getItem('usuarios')) || [];
@@ -126,4 +115,4 @@ function AdminPanel() {
     );
 }
 
-export default AdminPanel;
+export default AdminPanel;

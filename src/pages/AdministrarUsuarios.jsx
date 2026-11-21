@@ -19,12 +19,6 @@ function AdminUsuarios() {
 
     // 1. Proteger ruta y cargar usuarios
     useEffect(() => {
-        const usuarioStr = sessionStorage.getItem("usuarioActivo");
-        if (!usuarioStr) {
-            navigate('/login');
-            return;
-        }
-        
         let usuariosGuardados = JSON.parse(localStorage.getItem('usuarios')) || [];
         
         // Aseguramos que el admin exista
@@ -216,4 +210,4 @@ function AdminUsuarios() {
     );
 }
 
-export default AdminUsuarios;
+export default AdminUsuarios;

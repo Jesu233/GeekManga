@@ -1,9 +1,14 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
+import { useAuth } from '../context/AuthContext';
+import { erroresDeCampos, mensajeDeError } from '../services/api';
+
+const RUN_REGEX = /^\d{7,8}-[\dkK]$/;
 
 function Registro() {
     const navigate = useNavigate();
-    
+    const { registrar } = useAuth();
+
     // Estado para los campos
     const [formData, setFormData] = useState({
         nombre: '',
@@ -16,59 +21,58 @@ function Registro() {
 
     const [error, setError] = useState('');
     const [exito, setExito] = useState('');
+    const [enviando, setEnviando] = useState(false);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData({ ...formData, [name]: value });
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
         setExito('');
 
-        // 1. Validaciones básicas
-        if (!formData.nombre || !formData.correo || !formData.password) {
-            setError('El nombre, correo y contraseña son obligatorios.');
+        // 1. Validaciones básicas (las mismas reglas que valida el backend)
+        if (!formData.nombre.trim() || !formData.run.trim() || !formData.correo.trim() || !formData.password) {
+            setError('El nombre, RUN, correo y contraseña son obligatorios.');
             return;
         }
-
+        if (!RUN_REGEX.test(formData.run.trim())) {
+            setError('El RUN debe ir sin puntos y con guion, por ejemplo 12345678-9.');
+            return;
+        }
+        if (formData.password.length < 4) {
+            setError('La contraseña debe tener al menos 4 caracteres.');
+            return;
+        }
         if (formData.password !== formData.confirmarPassword) {
             setError('Las contraseñas no coinciden.');
             return;
         }
 
-        // 2. Leer usuarios existentes del localStorage
-        let usuariosGuardados = JSON.parse(localStorage.getItem('usuarios')) || [];
+        // 2. Registro en el backend: POST /api/v1/auth/registro
+        //    El backend crea el usuario con rol USER y devuelve sus tokens (queda logueado).
+        setEnviando(true);
+        try {
+            await registrar({
+                nombre: formData.nombre.trim(),
+                apellidos: formData.apellidos.trim(),
+                run: formData.run.trim(),
+                correo: formData.correo.trim().toLowerCase(),
+                password: formData.password,
+            });
 
-        // 3. Verificar que el correo no esté registrado
-        const correoNormalizado = formData.correo.trim().toLowerCase();
-        if (usuariosGuardados.some(u => u.correo === correoNormalizado)) {
-            setError('Este correo ya está registrado. Intenta iniciar sesión.');
-            return;
+            setExito('¡Cuenta creada con éxito! Redirigiendo a la tienda...');
+            setTimeout(() => navigate('/'), 1500);
+        } catch (err) {
+            const campos = erroresDeCampos(err);
+            setError(Object.keys(campos).length
+                ? Object.values(campos).join('. ')
+                : mensajeDeError(err, 'No se pudo crear la cuenta.'));
+        } finally {
+            setEnviando(false);
         }
-
-        // 4. Crear el nuevo usuario Cliente
-        const nuevoUsuario = {
-            id: `user-${Date.now()}`,
-            nombre: formData.nombre,
-            apellidos: formData.apellidos,
-            run: formData.run,
-            correo: correoNormalizado,
-            password: formData.password,
-            tipoUsuario: 'Cliente' // Por defecto, todos los que se registran aquí son clientes
-        };
-
-        // 5. Guardar en la "base de datos"
-        usuariosGuardados.push(nuevoUsuario);
-        localStorage.setItem('usuarios', JSON.stringify(usuariosGuardados));
-
-        // 6. Mostrar éxito y redirigir al login
-        setExito('¡Cuenta creada con éxito! Redirigiendo al inicio de sesión...');
-        
-        setTimeout(() => {
-            navigate('/login');
-        }, 2000);
     };
 
     return (
@@ -83,45 +87,46 @@ function Registro() {
             <div className="container-registrarse">
                 <h2 className="text-center mb-4">Crear una cuenta</h2>
 
-                <form onSubmit={handleSubmit} className="bg-dark p-4 rounded shadow-sm mx-auto border border-secondary" style={{ maxWidth: '600px' }}>
-                    
-                    {error && <div className="alert alert-danger">{error}</div>}
-                    {exito && <div className="alert alert-success">{exito}</div>}
+                <form onSubmit={handleSubmit} noValidate className="bg-dark p-4 rounded shadow-sm mx-auto border border-secondary" style={{ maxWidth: '600px' }}>
+                    {error && <div className="alert alert-danger" role="alert">{error}</div>}
+                    {exito && <div className="alert alert-success" role="status">{exito}</div>}
 
                     <div className="row">
                         <div className="col-md-6 mb-3">
-                            <label className="form-label text-light">Nombre</label>
-                            <input type="text" name="nombre" className="form-control bg-dark text-light" value={formData.nombre} onChange={handleChange} required />
+                            <label htmlFor="nombre" className="form-label text-light">Nombre</label>
+                            <input id="nombre" type="text" name="nombre" maxLength="25" className="form-control bg-dark text-light" value={formData.nombre} onChange={handleChange} required />
                         </div>
                         <div className="col-md-6 mb-3">
-                            <label className="form-label text-light">Apellidos</label>
-                            <input type="text" name="apellidos" className="form-control bg-dark text-light" value={formData.apellidos} onChange={handleChange} />
+                            <label htmlFor="apellidos" className="form-label text-light">Apellidos</label>
+                            <input id="apellidos" type="text" name="apellidos" maxLength="30" className="form-control bg-dark text-light" value={formData.apellidos} onChange={handleChange} />
                         </div>
                     </div>
 
                     <div className="mb-3">
-                        <label className="form-label text-light">RUN</label>
-                        <input type="text" name="run" className="form-control bg-dark text-light" value={formData.run} onChange={handleChange} />
+                        <label htmlFor="run" className="form-label text-light">RUN</label>
+                        <input id="run" type="text" name="run" maxLength="10" placeholder="12345678-9" className="form-control bg-dark text-light" value={formData.run} onChange={handleChange} required />
                     </div>
 
                     <div className="mb-3">
-                        <label className="form-label text-light">Correo Electrónico</label>
-                        <input type="email" name="correo" className="form-control bg-dark text-light" value={formData.correo} onChange={handleChange} required />
+                        <label htmlFor="correo" className="form-label text-light">Correo Electrónico</label>
+                        <input id="correo" type="email" name="correo" maxLength="100" className="form-control bg-dark text-light" value={formData.correo} onChange={handleChange} required />
                     </div>
 
                     <div className="row">
                         <div className="col-md-6 mb-3">
-                            <label className="form-label text-light">Contraseña</label>
-                            <input type="password" name="password" className="form-control bg-dark text-light" value={formData.password} onChange={handleChange} required />
+                            <label htmlFor="password" className="form-label text-light">Contraseña</label>
+                            <input id="password" type="password" name="password" className="form-control bg-dark text-light" value={formData.password} onChange={handleChange} required />
                         </div>
                         <div className="col-md-6 mb-3">
-                            <label className="form-label text-light">Confirmar Contraseña</label>
-                            <input type="password" name="confirmarPassword" className="form-control bg-dark text-light" value={formData.confirmarPassword} onChange={handleChange} required />
+                            <label htmlFor="confirmarPassword" className="form-label text-light">Confirmar Contraseña</label>
+                            <input id="confirmarPassword" type="password" name="confirmarPassword" className="form-control bg-dark text-light" value={formData.confirmarPassword} onChange={handleChange} required />
                         </div>
                     </div>
 
-                    <button type="submit" className="btn btn-warning btn-lg w-100 mt-3">Registrarse</button>
-                    
+                    <button type="submit" className="btn btn-warning btn-lg w-100 mt-3" disabled={enviando}>
+                        {enviando ? 'Creando cuenta...' : 'Registrarse'}
+                    </button>
+
                     <p className="text-light mt-3 mb-0 text-center">
                         ¿Ya tienes cuenta? <Link to="/login" className="text-warning">Inicia sesión aquí</Link>
                     </p>

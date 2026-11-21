@@ -7,18 +7,7 @@ function AdminListadoProductos() {
     const [productos, setProductos] = useState([]);
     const navigate = useNavigate();
 
-    // 1. Protegemos la ruta (por si alguien entra sin loguearse)
-    useEffect(() => {
-        const usuarioStr = sessionStorage.getItem("usuarioActivo");
-        if (!usuarioStr) {
-            navigate('/login');
-            return;
-        }
-        const usuario = JSON.parse(usuarioStr);
-        if (usuario.tipoUsuario !== 'Administrador' && usuario.tipoUsuario !== 'Vendedor') {
-            navigate('/');
-        }
-    }, [navigate]);
+    // La protección de la ruta (sesión y rol) la hace RutaProtegida en App.jsx
 
     // 2. Cargamos los productos
     useEffect(() => {
@@ -104,4 +93,4 @@ function AdminListadoProductos() {
     );
 }
 
-export default AdminListadoProductos;
+export default AdminListadoProductos;
