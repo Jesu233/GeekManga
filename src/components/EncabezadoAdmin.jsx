@@ -36,6 +36,7 @@ function EncabezadoAdmin() {
                                 <Nav.Link as={Link} to={PATHS.ADMIN_AGREGAR_PRODUCTO} className="link-pop text-light">Productos</Nav.Link>
                             )}
                             <Nav.Link as={Link} to={PATHS.ADMIN_LISTADO} className="link-pop text-light">Listado</Nav.Link>
+                            <Nav.Link as={Link} to={PATHS.ADMIN_BOLETAS} className="link-pop text-light">Boletas</Nav.Link>
                             {esAdmin && (
                                 <Nav.Link as={Link} to={PATHS.ADMIN_USUARIOS} className="link-pop text-light">Usuarios</Nav.Link>
                             )}

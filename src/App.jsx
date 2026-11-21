@@ -26,6 +26,7 @@ import Registro from './pages/Registro';
 import DetalleBlog from './pages/DetalleBlog';
 import AdminUsuarios from './pages/AdministrarUsuarios';
 import AdminEditarProducto from './pages/AdminEditarProducto';
+import AdminBoletas from './pages/AdminBoletas';
 
 // Quién puede entrar a cada sección del panel
 const STAFF = [ROLES.ADMIN, ROLES.VENDEDOR];
@@ -65,6 +66,7 @@ function App() {
                         {/* Panel de administración: ADMIN y VENDEDOR */}
                         <Route path={PATHS.ADMIN} element={<RutaProtegida roles={STAFF}><AdminPanel/></RutaProtegida>}/>
                         <Route path={PATHS.ADMIN_LISTADO} element={<RutaProtegida roles={STAFF}><AdminListadoProductos/></RutaProtegida>}/>
+                        <Route path={PATHS.ADMIN_BOLETAS} element={<RutaProtegida roles={STAFF}><AdminBoletas/></RutaProtegida>}/>
 
                         {/* Solo ADMIN */}
                         <Route path={PATHS.ADMIN_AGREGAR_PRODUCTO} element={<RutaProtegida roles={SOLO_ADMIN}><AdminAgregarProducto/></RutaProtegida>}/>

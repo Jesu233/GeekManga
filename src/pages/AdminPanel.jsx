@@ -1,118 +1,140 @@
-import { Link, useNavigate } from 'react-router';
-import { useEffect, useState } from 'react';
+import { Link } from 'react-router';
 import EncabezadoAdmin from '../components/EncabezadoAdmin';
-import { productDB } from '../data/BaseDeDatos';
+import EstadoCarga from '../components/EstadoCarga';
+import { useApi } from '../hooks/useApi';
+import { useAuth } from '../context/AuthContext';
+import { listarProductos } from '../services/productoService';
+import { listarUsuarios } from '../services/usuarioService';
+import { listarBoletas } from '../services/boletaService';
+import { formatoFecha, formatoPrecio } from '../services/formato';
+import { ROLES } from '../services/roles';
+import { PATHS } from '../routes/paths';
+
+// Resumen del panel. Los usuarios solo se consultan si es ADMIN (el VENDEDOR recibiría 403).
+const cargarResumen = (esAdmin) => Promise.all([
+    listarProductos(),
+    listarBoletas(),
+    esAdmin ? listarUsuarios() : Promise.resolve(null),
+]).then(([productos, boletas, usuarios]) => ({ productos, boletas, usuarios }));
+
+function Tarjeta({ titulo, texto, enlace, boton }) {
+    return (
+        <div className="col-md-3">
+            <div className="card bg-dark text-light border-warning h-100 p-3">
+                <h5 className="text-warning mb-3">{titulo}</h5>
+                <p className="text-secondary small flex-grow-1">{texto}</p>
+                <Link to={enlace} className="btn btn-warning w-100 mt-auto">{boton}</Link>
+            </div>
+        </div>
+    );
+}
 
 function AdminPanel() {
-    const navigate = useNavigate();
-    
-    // Estados para el resumen rápido
-    const [totalProductos, setTotalProductos] = useState(0);
-    const [totalUsuarios, setTotalUsuarios] = useState(0);
+    const { usuario, tieneRol } = useAuth();
+    const esAdmin = tieneRol(ROLES.ADMIN);
 
-    // Protegemos la ruta y cargamos los datos
-    useEffect(() => {
-        // Cargamos los datos reales para el resumen
-        const productos = productDB.getAll() || [];
-        const usuarios = JSON.parse(localStorage.getItem('usuarios')) || [];
-        
-        setTotalProductos(productos.length);
-        setTotalUsuarios(usuarios.length);
-    }, [navigate]);
+    const { datos, cargando, error, recargar } = useApi(() => cargarResumen(esAdmin), [esAdmin]);
+
+    const stockCritico = datos?.productos.filter((p) => p.stock <= p.stockCritico) ?? [];
+    const totalVentas = datos?.boletas.reduce((s, b) => s + b.total, 0) ?? 0;
 
     return (
         <>
-        <EncabezadoAdmin/> 
+            <EncabezadoAdmin />
 
-        <main className="container-fluid bg-dark text-light py-4">
-            <div className="container">
-                <nav aria-label="breadcrumb" className="mb-1">
-                    <ol className="breadcrumb mb-0">
-                        <li className="breadcrumb-item"><Link to="/admin" className="text-warning">Home Admin</Link>
-                        </li>
-                    </ol>
-                </nav>
-                
-                <h1 className="text-light mb-4">Panel de administración</h1>
+            <main className="container-fluid bg-dark text-light py-4">
+                <div className="container">
+                    <nav aria-label="breadcrumb" className="mb-1">
+                        <ol className="breadcrumb mb-0">
+                            <li className="breadcrumb-item"><Link to={PATHS.ADMIN} className="text-warning">Home Admin</Link></li>
+                        </ol>
+                    </nav>
 
-                {/* FILA 1: TARJETAS PRINCIPALES */}
-                <div className="row g-4 mb-4">
-                    <div className="col-md-3">
-                        <div className="card bg-dark text-light border-warning h-100 p-3">
-                            <h5 className="text-warning mb-3">Productos</h5>
-                            <p className="text-secondary small flex-grow-1">Agregar y administrar productos del catálogo.</p>
-                            <Link to="/admin/agregar-producto" className="btn btn-warning w-100 mt-auto">Ir a productos</Link>
-                        </div>
-                    </div>
-                    <div className="col-md-3">
-                        <div className="card bg-dark text-light border-warning h-100 p-3">
-                            <h5 className="text-warning mb-3">Listado</h5>
-                            <p className="text-secondary small flex-grow-1">Revisa los productos registrados y su información.</p>
-                            <Link to="/admin/listado" className="btn btn-warning w-100 mt-auto">Ver listado</Link>
-                        </div>
-                    </div>
-                    <div className="col-md-3">
-                        <div className="card bg-dark text-light border-warning h-100 p-3">
-                            <h5 className="text-warning mb-3">Usuarios</h5>
-                            <p className="text-secondary small flex-grow-1">Consulta y administra usuarios del sitio.</p>
-                            <Link to="/admin/usuarios" className="btn btn-warning w-100 mt-auto">Administrar usuarios</Link>
-                        </div>
-                    </div>
-                    <div className="col-md-3">
-                        <div className="card bg-dark text-light border-warning h-100 p-3">
-                            <h5 className="text-warning mb-3">Tienda</h5>
-                            <p className="text-secondary small flex-grow-1">Visualiza la vista de usuarios de la tienda.</p>
-                            <Link to="/" className="btn btn-warning w-100 mt-auto">Ir a inicio</Link>
-                        </div>
-                    </div>
-                </div>
+                    <h1 className="text-light mb-1">Panel de administración</h1>
+                    <p className="text-secondary mb-4">Hola {usuario?.nombre}, estás como {esAdmin ? 'Administrador' : 'Vendedor'}.</p>
 
-                {/* FILA 2: RESUMEN Y ACCIONES RÁPIDAS */}
-                <div className="row g-4">
-                    {/* Bloque de Resumen Rápido */}
-                    <div className="col-lg-6">
-                        <div className="card bg-dark text-light border-secondary h-100 p-4">
-                            <h4 className="text-warning mb-4">Resumen rápido</h4>
-                            <ul className="list-group list-group-flush bg-dark">
-                                <li className="list-group-item bg-dark text-light border-secondary d-flex justify-content-between align-items-center py-3">
-                                    <span>Productos activos:</span>
-                                    <span className="badge bg-secondary fs-6">{totalProductos}</span>
-                                </li>
-                                <li className="list-group-item bg-dark text-light border-secondary d-flex justify-content-between align-items-center py-3">
-                                    <span>Usuarios registrados:</span>
-                                    <span className="badge bg-secondary fs-6">{totalUsuarios}</span>
-                                </li>
-                                <li className="list-group-item bg-dark text-light border-secondary d-flex justify-content-between align-items-center py-3">
-                                    <span>Pedidos pendientes:</span>
-                                    <span className="badge bg-secondary fs-6">0</span>
-                                </li>
-                            </ul>
-                        </div>
+                    {/* FILA 1: accesos según rol */}
+                    <div className="row g-4 mb-4">
+                        {esAdmin && (
+                            <Tarjeta titulo="Productos" texto="Agregar y administrar productos y categorías." enlace={PATHS.ADMIN_AGREGAR_PRODUCTO} boton="Ir a productos" />
+                        )}
+                        <Tarjeta titulo="Listado" texto="Revisa los productos registrados y su stock." enlace={PATHS.ADMIN_LISTADO} boton="Ver listado" />
+                        <Tarjeta titulo="Boletas" texto="Revisa todas las ventas de la tienda." enlace={PATHS.ADMIN_BOLETAS} boton="Ver boletas" />
+                        {esAdmin && (
+                            <Tarjeta titulo="Usuarios" texto="Consulta y administra usuarios y roles." enlace={PATHS.ADMIN_USUARIOS} boton="Administrar usuarios" />
+                        )}
+                        {!esAdmin && (
+                            <Tarjeta titulo="Tienda" texto="Visualiza la tienda como la ven los clientes." enlace={PATHS.HOME} boton="Ir a inicio" />
+                        )}
                     </div>
 
-                    {/* Bloque de Acciones Rápidas */}
-                    <div className="col-lg-6">
-                        <div className="card bg-dark text-light border-secondary h-100 p-4">
-                            <h4 className="text-warning mb-4">Acciones rápidas</h4>
-                            <div className="d-grid gap-3">
-                                <Link to="/admin/agregar-producto" className="btn btn-outline-warning py-2 text-start px-3">
-                                    Agregar nuevo producto
-                                </Link>
-                                <Link to="/admin/listado" className="btn btn-outline-warning py-2 text-start px-3">
-                                    Ver productos registrados
-                                </Link>
-                                <Link to="/admin/usuarios" className="btn btn-outline-warning py-2 text-start px-3">
-                                    Gestionar usuarios
-                                </Link>
+                    <EstadoCarga cargando={cargando} error={error} onReintentar={recargar} texto="Cargando resumen..." />
+
+                    {!cargando && datos && (
+                        <div className="row g-4">
+                            {/* Resumen rápido con datos reales del backend */}
+                            <div className="col-lg-5">
+                                <div className="card bg-dark text-light border-secondary h-100 p-4">
+                                    <h4 className="text-warning mb-4">Resumen rápido</h4>
+                                    <ul className="list-group list-group-flush bg-dark">
+                                        <li className="list-group-item bg-dark text-light border-secondary d-flex justify-content-between align-items-center py-3">
+                                            <span>Productos en catálogo:</span>
+                                            <span className="badge bg-secondary fs-6">{datos.productos.length}</span>
+                                        </li>
+                                        <li className="list-group-item bg-dark text-light border-secondary d-flex justify-content-between align-items-center py-3">
+                                            <span>Productos con stock crítico:</span>
+                                            <span className={`badge fs-6 ${stockCritico.length ? 'bg-warning text-dark' : 'bg-secondary'}`}>{stockCritico.length}</span>
+                                        </li>
+                                        {esAdmin && (
+                                            <li className="list-group-item bg-dark text-light border-secondary d-flex justify-content-between align-items-center py-3">
+                                                <span>Usuarios registrados:</span>
+                                                <span className="badge bg-secondary fs-6">{datos.usuarios.length}</span>
+                                            </li>
+                                        )}
+                                        <li className="list-group-item bg-dark text-light border-secondary d-flex justify-content-between align-items-center py-3">
+                                            <span>Boletas emitidas:</span>
+                                            <span className="badge bg-secondary fs-6">{datos.boletas.length}</span>
+                                        </li>
+                                        <li className="list-group-item bg-dark text-light border-secondary d-flex justify-content-between align-items-center py-3">
+                                            <span>Total vendido:</span>
+                                            <span className="badge bg-success fs-6">{formatoPrecio(totalVentas)}</span>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            {/* Últimas ventas */}
+                            <div className="col-lg-7">
+                                <div className="card bg-dark text-light border-secondary h-100 p-4">
+                                    <h4 className="text-warning mb-4">Últimas ventas</h4>
+                                    {datos.boletas.length === 0 ? (
+                                        <p className="text-secondary">Todavía no hay ventas.</p>
+                                    ) : (
+                                        <table className="table table-dark table-sm align-middle mb-3">
+                                            <thead>
+                                                <tr><th>N°</th><th>Fecha</th><th>Cliente</th><th className="text-end">Total</th></tr>
+                                            </thead>
+                                            <tbody>
+                                                {datos.boletas.slice(0, 5).map((b) => (
+                                                    <tr key={b.id}>
+                                                        <td>{b.id}</td>
+                                                        <td>{formatoFecha(b.fechaEmision)}</td>
+                                                        <td>{b.usuario?.nombre}</td>
+                                                        <td className="text-end">{formatoPrecio(b.total)}</td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    )}
+                                    <Link to={PATHS.ADMIN_BOLETAS} className="btn btn-outline-warning mt-auto">Ver todas las boletas</Link>
+                                </div>
                             </div>
                         </div>
-                    </div>
+                    )}
                 </div>
-
-            </div>
-        </main>
+            </main>
         </>
     );
 }
 
-export default AdminPanel;
+export default AdminPanel;

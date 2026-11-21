@@ -26,4 +26,5 @@ export const PATHS = {
     ADMIN_EDITAR_PRODUCTO: (id) => `/admin/editar-producto/${id}`,
     ADMIN_LISTADO: '/admin/listado',
     ADMIN_USUARIOS: '/admin/usuarios',
+    ADMIN_BOLETAS: '/admin/boletas',
 };

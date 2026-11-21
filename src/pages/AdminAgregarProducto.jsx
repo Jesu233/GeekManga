@@ -1,173 +1,106 @@
-import { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router';
-import { productDB } from '../data/BaseDeDatos';
-import EncabezadoAdmin from '../components/EncabezadoAdmin'; // 👈 Importamos el menú de admin
+import { useState } from 'react';
+import { Link } from 'react-router';
+import EncabezadoAdmin from '../components/EncabezadoAdmin';
+import FormularioProducto from '../components/FormularioProducto';
+import GestionCategorias from '../components/GestionCategorias';
+import EstadoCarga from '../components/EstadoCarga';
+import { useApi } from '../hooks/useApi';
+import { listarProductos, crearProducto, eliminarProducto } from '../services/productoService';
+import { listarCategorias } from '../services/categoriaService';
+import { mensajeDeError } from '../services/api';
+import { formatoPrecio, imagenProducto } from '../services/formato';
+import { PATHS } from '../routes/paths';
 
+const cargarDatos = () => Promise.all([listarProductos(), listarCategorias()])
+    .then(([productos, categorias]) => ({ productos, categorias }));
+
+// Solo ADMIN (protegida en App.jsx y en el backend)
 function AdminAgregarProducto() {
-    const navigate = useNavigate();
-    const [productos, setProductos] = useState([]);
-    
-    // Estado para el formulario
-    const [formData, setFormData] = useState({
-        codigo: '',
-        producto: '',
-        precio: '',
-        marca: '',
-        stock: '',
-        stockCritico: '',
-        categoria: 'Manga',
-        descripcion: '',
-        foto: '/images/onepiece.jpg' // Imagen por defecto
-    });
+    const { datos, cargando, error, recargar } = useApi(cargarDatos);
+    const [mensaje, setMensaje] = useState(null);
 
-    // 1. Protegemos la ruta y cargamos productos
-    useEffect(() => {
-        setProductos(productDB.getAll());
-    }, [navigate]);
-
-    const handleChange = (e) => {
-        const { name, value } = e.target;
-        setFormData({ ...formData, [name]: value });
+    // POST /api/v1/producto
+    const guardar = async (producto) => {
+        const creado = await crearProducto(producto);
+        setMensaje({ tipo: 'success', texto: `¡Producto "${creado.producto}" agregado con éxito!` });
+        recargar();
     };
 
-    const handleFotoChange = (e) => {
-        const archivo = e.target.files[0];
-        if(archivo){
-            const reader = new FileReader();
-            reader.onload = function (evento){
-                setFormData({ ...formData, foto: evento.target.result});
-
-            };
-            reader.readAsDataURL(archivo);
-        }
-    };
-
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        
-        if (!formData.producto || !formData.precio) {
-            alert("El nombre y el precio son obligatorios");
-            return;
-        }
-
-        // Usamos tu base de datos
-        productDB.create({
-            ...formData,
-            precio: Number(formData.precio),
-            stock: Number(formData.stock),
-            stockCritico: Number(formData.stockCritico)
-        });
-
-        alert("¡Producto agregado con éxito!");
-        
-        setProductos(productDB.getAll());
-        setFormData({
-            codigo: '', producto: '', precio: '', marca: '',
-            stock: '', stockCritico: '', categoria: 'Manga',
-            descripcion: '', foto: '/images/onepiece.jpg'
-        });
-    };
-
-    const handleEliminar = (id) => {
-        if(window.confirm("¿Seguro que quieres eliminar este producto?")) {
-            productDB.delete(id); 
-            setProductos(productDB.getAll()); 
+    // DELETE /api/v1/producto/eliminar/{id}
+    const handleEliminar = async (prod) => {
+        if (!window.confirm(`¿Seguro que quieres eliminar "${prod.producto}"?`)) return;
+        try {
+            await eliminarProducto(prod.id);
+            setMensaje({ tipo: 'success', texto: 'Producto eliminado.' });
+            recargar();
+        } catch (err) {
+            setMensaje({ tipo: 'danger', texto: mensajeDeError(err, 'No se pudo eliminar el producto.') });
         }
     };
 
     return (
         <>
-            <EncabezadoAdmin /> {/* 👈 Agregamos el menú de admin aquí */}
+            <EncabezadoAdmin />
 
-            {/* Fondo oscuro que cubre toda la pantalla */}
             <main className="container-fluid bg-dark text-light py-4">
                 <div className="container">
-                    
                     <nav aria-label="breadcrumb" className="mb-3">
                         <ol className="breadcrumb mb-0">
-                            <li className="breadcrumb-item"><Link to="/admin" className="text-warning text-decoration-none">Home Admin</Link></li>
+                            <li className="breadcrumb-item"><Link to={PATHS.ADMIN} className="text-warning text-decoration-none">Home Admin</Link></li>
                             <li className="breadcrumb-item active text-light">Productos</li>
                         </ol>
                     </nav>
 
                     <h1 className="mb-4 text-light">Productos</h1>
 
-                    {/* FORMULARIO ESTILO OSCURO */}
-                    <section className="bg-dark text-light p-4 rounded border border-secondary mb-5 mx-auto" style={{ maxWidth: '800px' }}>
-                        <form onSubmit={handleSubmit}>
-                            <div className="row">
-                                <div className="col-md-6 mb-3">
-                                    <label className="form-label">Código</label>
-                                    <input type="text" name="codigo" className="form-control" value={formData.codigo} onChange={handleChange} required />
-                                </div>
-                                <div className="col-md-6 mb-3">
-                                    <label className="form-label">Nombre del Producto</label>
-                                    <input type="text" name="producto" className="form-control" value={formData.producto} onChange={handleChange} required />
-                                </div>
-                                <div className="col-md-6 mb-3">
-                                    <label className="form-label">Precio del Producto</label>
-                                    <input type="number" name="precio" className="form-control" value={formData.precio} onChange={handleChange} required />
-                                </div>
-                                <div className="col-md-6 mb-3">
-                                    <label className="form-label">Marca del producto</label>
-                                    <input type="text" name="marca" className="form-control" value={formData.marca} onChange={handleChange} />
-                                </div>
-                                <div className="col-md-6 mb-3">
-                                    <label className="form-label">Stock</label>
-                                    <input type="number" name="stock" className="form-control" value={formData.stock} onChange={handleChange} />
-                                </div>
-                                <div className="col-md-6 mb-3">
-                                    <label className="form-label">Stock crítico</label>
-                                    <input type="number" name="stockCritico" className="form-control" value={formData.stockCritico} onChange={handleChange} />
-                                </div>
-                                <div className="col-md-12 mb-3">
-                                    <label className="form-label">Categoría</label>
-                                    <select name="categoria" className="form-select" value={formData.categoria} onChange={handleChange}>
-                                        <option value="Manga">Manga</option>
-                                        <option value="Comic">Cómic</option>
-                                        <option value="Figura">Figura</option>
-                                    </select>
-                                </div>
-                                <div className="col-md-12 mb-3">
-                                    <label className="form-label">Descripción</label>
-                                    <textarea name="descripcion" className="form-control" rows="2" value={formData.descripcion} onChange={handleChange}></textarea>
-                                </div>
-                                <div className="col-md-12 mb-4">
-                                    <label className="form-label">Foto del producto</label>
-                                    <input type="file" accept='image/*' className='form-control' onChange={handleChange}/>
-                                </div>
-                            </div>
-                            {/* Botón azul igual al de tu captura */}
-                            <button type="submit" className="btn btn-primary">Subir producto</button>
-                        </form>
-                    </section>
+                    {mensaje && (
+                        <div className={`alert alert-${mensaje.tipo} mx-auto`} style={{ maxWidth: '800px' }} role={mensaje.tipo === 'danger' ? 'alert' : 'status'}>
+                            {mensaje.texto}
+                        </div>
+                    )}
 
-                    {/* LISTA DE PRODUCTOS REGISTRADOS */}
-                    <h2 className="text-light mb-4">Productos Registrados</h2>
-                    <div className="row g-4">
-                        {productos.map((prod) => (
-                            <div className="col-md-4" key={prod.id}>
-                                <div className="card bg-secondary text-light border-0 h-100 shadow-sm">
-                                    <img src={prod.foto} className="card-img-top" alt={prod.producto} style={{ height: '250px', objectFit: 'cover' }} />
-                                    <div className="card-body bg-dark">
-                                        <h5 className="card-title">{prod.producto}</h5>
-                                        <p className="small mb-1">Código: {prod.codigo}</p>
-                                        <p className="small mb-1">Precio: ${prod.precio?.toLocaleString('es-CL')}</p>
-                                        <p className="small mb-1">Stock: {prod.stock}</p>
-                                        
-                                        <div className="d-flex gap-2 mt-3">
-                                            <Link to={`/admin/editar-producto/${prod.id}`} className="btn btn-warning btn-sm w-50">Editar</Link>
-                                            <button onClick={() => handleEliminar(prod.id)} className="btn btn-danger btn-sm w-50">Eliminar</button>
+                    <EstadoCarga cargando={cargando && !datos} error={error} onReintentar={recargar} />
+
+                    {datos && (
+                        <>
+                            <section className="bg-dark text-light p-4 rounded border border-secondary mb-4 mx-auto" style={{ maxWidth: '800px' }}>
+                                <h4 className="text-warning mb-3">Nuevo producto</h4>
+                                <FormularioProducto
+                                    categorias={datos.categorias}
+                                    textoBoton="Subir producto"
+                                    onGuardar={guardar}
+                                />
+                            </section>
+
+                            <GestionCategorias categorias={datos.categorias} onCambio={recargar} />
+
+                            <h2 className="text-light mb-4">Productos Registrados</h2>
+                            <div className="row g-4">
+                                {datos.productos.map((prod) => (
+                                    <div className="col-md-4" key={prod.id}>
+                                        <div className="card bg-secondary text-light border-0 h-100 shadow-sm">
+                                            <img src={imagenProducto(prod)} className="card-img-top" alt={prod.producto} style={{ height: '250px', objectFit: 'cover' }} />
+                                            <div className="card-body bg-dark">
+                                                <h5 className="card-title">{prod.producto}</h5>
+                                                <p className="small mb-1">Código: {prod.codigo}</p>
+                                                <p className="small mb-1">Precio: {formatoPrecio(prod.precio)}</p>
+                                                <p className="small mb-1">Stock: {prod.stock}</p>
+
+                                                <div className="d-flex gap-2 mt-3">
+                                                    <Link to={PATHS.ADMIN_EDITAR_PRODUCTO(prod.id)} className="btn btn-warning btn-sm w-50">Editar</Link>
+                                                    <button onClick={() => handleEliminar(prod)} className="btn btn-danger btn-sm w-50">Eliminar</button>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
+                                ))}
                             </div>
-                        ))}
-                    </div>
+                        </>
+                    )}
                 </div>
             </main>
         </>
     );
 }
 
-export default AdminAgregarProducto;
+export default AdminAgregarProducto;

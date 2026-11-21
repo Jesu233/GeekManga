@@ -1,107 +1,133 @@
-import { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router';
+import { useState } from 'react';
+import { Link } from 'react-router';
 import EncabezadoAdmin from '../components/EncabezadoAdmin';
+import EstadoCarga from '../components/EstadoCarga';
+import { useApi } from '../hooks/useApi';
+import { useAuth } from '../context/AuthContext';
+import { listarUsuarios, crearUsuario, actualizarUsuario, eliminarUsuario } from '../services/usuarioService';
+import { erroresDeCampos, mensajeDeError } from '../services/api';
+import { NOMBRE_ROL, ROLES } from '../services/roles';
+import { PATHS } from '../routes/paths';
 
+const FORM_VACIO = {
+    usuarioId: null,
+    nombre: '',
+    apellidos: '',
+    run: '',
+    correo: '',
+    password: '',
+    tipoUsuario: ROLES.USER,
+};
+
+const COLOR_ROL = { ADMIN: 'bg-danger', VENDEDOR: 'bg-info text-dark', USER: 'bg-secondary' };
+
+// Solo ADMIN (protegida en App.jsx y en el backend)
 function AdminUsuarios() {
-    const navigate = useNavigate();
-    const [usuarios, setUsuarios] = useState([]);
-    
-    // Estado para el formulario
-    const [formData, setFormData] = useState({
-        id: null,
-        nombre: '',
-        apellidos: '',
-        run: '',
-        correo: '',
-        password: '',
-        tipoUsuario: 'Cliente'
-    });
+    const { usuario: actual } = useAuth();
+    const { datos: usuarios, cargando, error, recargar } = useApi(listarUsuarios);
 
-    // 1. Proteger ruta y cargar usuarios
-    useEffect(() => {
-        let usuariosGuardados = JSON.parse(localStorage.getItem('usuarios')) || [];
-        
-        // Aseguramos que el admin exista
-        const adminPorDefecto = {
-            id: 'admin-1',
-            nombre: 'Administrador',
-            correo: 'admin@gmail.com',
-            password: 'admin123',
-            tipoUsuario: 'Administrador'
-        };
-        if (!usuariosGuardados.some(u => u.correo === adminPorDefecto.correo)) {
-            usuariosGuardados.push(adminPorDefecto);
-            localStorage.setItem('usuarios', JSON.stringify(usuariosGuardados));
-        }
-        setUsuarios(usuariosGuardados);
-    }, [navigate]);
+    const [formData, setFormData] = useState(FORM_VACIO);
+    const [errores, setErrores] = useState({});
+    const [mensaje, setMensaje] = useState(null);
+    const [guardando, setGuardando] = useState(false);
+
+    const editando = formData.usuarioId !== null;
 
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData({ ...formData, [name]: value });
+        if (errores[name]) setErrores({ ...errores, [name]: null });
     };
 
-    // 2. Guardar o Actualizar Usuario
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        
-        if (!formData.nombre || !formData.correo || !formData.password) {
-            alert("El nombre, correo y contraseña son obligatorios.");
-            return;
-        }
-
-        let nuevosUsuarios;
-
-        if (formData.id) {
-            // MODO EDICIÓN
-            nuevosUsuarios = usuarios.map(u => 
-                u.id === formData.id ? { ...u, ...formData } : u
-            );
-            alert("Usuario actualizado con éxito");
-        } else {
-            // MODO CREACIÓN
-            if (usuarios.some(u => u.correo === formData.correo.toLowerCase())) {
-                alert("Este correo ya está registrado.");
-                return;
-            }
-            const nuevoUsuario = {
-                ...formData,
-                id: `user-${Date.now()}`,
-                correo: formData.correo.toLowerCase()
-            };
-            nuevosUsuarios = [...usuarios, nuevoUsuario];
-            alert("¡Usuario guardado con éxito!");
-        }
-
-        localStorage.setItem('usuarios', JSON.stringify(nuevosUsuarios));
-        setUsuarios(nuevosUsuarios);
-        limpiarFormulario();
-    };
-
-    // 3. Eliminar Usuario
-    const handleEliminar = (id, correo) => {
-        if (correo === 'admin@gmail.com') {
-            alert("No puedes eliminar al Administrador principal.");
-            return;
-        }
-
-        if (window.confirm("¿Seguro que quieres eliminar este usuario?")) {
-            const filtrados = usuarios.filter(u => u.id !== id);
-            localStorage.setItem('usuarios', JSON.stringify(filtrados));
-            setUsuarios(filtrados);
-        }
-    };
-
-    // 4. Editar Usuario
-    const handleEditar = (usuario) => {
-        setFormData(usuario);
+    const validar = () => {
+        const e = {};
+        if (!formData.nombre.trim()) e.nombre = 'El nombre es obligatorio';
+        if (!/^\d{7,8}-[\dkK]$/.test(formData.run.trim())) e.run = 'RUN sin puntos y con guion (12345678-9)';
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.correo.trim())) e.correo = 'Correo inválido';
+        if (!editando && formData.password.length < 4) e.password = 'Mínimo 4 caracteres';
+        if (editando && formData.password && formData.password.length < 4) e.password = 'Mínimo 4 caracteres';
+        setErrores(e);
+        return Object.keys(e).length === 0;
     };
 
     const limpiarFormulario = () => {
-        setFormData({
-            id: null, nombre: '', apellidos: '', run: '', correo: '', password: '', tipoUsuario: 'Cliente'
-        });
+        setFormData(FORM_VACIO);
+        setErrores({});
     };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setMensaje(null);
+        if (!validar()) return;
+
+        const datos = {
+            nombre: formData.nombre.trim(),
+            apellidos: formData.apellidos.trim(),
+            run: formData.run.trim(),
+            correo: formData.correo.trim().toLowerCase(),
+            password: formData.password || null,
+            tipoUsuario: formData.tipoUsuario,
+        };
+
+        setGuardando(true);
+        try {
+            if (editando) {
+                await actualizarUsuario(formData.usuarioId, datos);   // PUT /usuario/actualizar/{id}
+                setMensaje({ tipo: 'success', texto: 'Usuario actualizado.' });
+            } else {
+                await crearUsuario(datos);                            // POST /usuario
+                setMensaje({ tipo: 'success', texto: 'Usuario creado.' });
+            }
+            limpiarFormulario();
+            recargar();
+        } catch (err) {
+            setErrores(erroresDeCampos(err));
+            setMensaje({ tipo: 'danger', texto: mensajeDeError(err, 'No se pudo guardar el usuario.') });
+        } finally {
+            setGuardando(false);
+        }
+    };
+
+    const handleEditar = (u) => {
+        setFormData({
+            usuarioId: u.usuarioId,
+            nombre: u.nombre ?? '',
+            apellidos: u.apellidos ?? '',
+            run: u.run ?? '',
+            correo: u.correo ?? '',
+            password: '',
+            tipoUsuario: u.tipoUsuario ?? ROLES.USER,
+        });
+        setErrores({});
+        setMensaje(null);
+    };
+
+    const handleEliminar = async (u) => {
+        if (!window.confirm(`¿Seguro que quieres eliminar a ${u.correo}?`)) return;
+        try {
+            await eliminarUsuario(u.usuarioId);                         // DELETE /usuario/eliminar/{id}
+            setMensaje({ tipo: 'success', texto: 'Usuario eliminado.' });
+            recargar();
+        } catch (err) {
+            setMensaje({ tipo: 'danger', texto: mensajeDeError(err, 'No se pudo eliminar el usuario.') });
+        }
+    };
+
+    const input = (name, label, type = 'text', extra = {}) => (
+        <div className="mb-3">
+            <label htmlFor={`usuario-${name}`} className="form-label text-light">{label}</label>
+            <input
+                id={`usuario-${name}`}
+                type={type}
+                name={name}
+                className={`form-control bg-dark text-light ${errores[name] ? 'is-invalid' : ''}`}
+                value={formData[name]}
+                onChange={handleChange}
+                {...extra}
+            />
+            {errores[name] && <div className="invalid-feedback">{errores[name]}</div>}
+        </div>
+    );
 
     return (
         <>
@@ -109,59 +135,52 @@ function AdminUsuarios() {
 
             <main className="container-fluid bg-dark text-light py-4">
                 <div className="container">
-                    
                     <nav aria-label="breadcrumb" className="mb-3">
                         <ol className="breadcrumb mb-0">
-                            <li className="breadcrumb-item"><Link to="/admin" className="text-warning text-decoration-none">Home Admin</Link></li>
+                            <li className="breadcrumb-item"><Link to={PATHS.ADMIN} className="text-warning text-decoration-none">Home Admin</Link></li>
                             <li className="breadcrumb-item active text-light">Usuarios</li>
                         </ol>
                     </nav>
 
-                    <div className="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
-                        <div>
-                            <h1 className="mb-1">Administración de usuarios</h1>
-                            <p className="text-secondary mb-0">Crear, editar y gestionar usuarios del sistema.</p>
-                        </div>
+                    <div className="mb-4">
+                        <h1 className="mb-1">Administración de usuarios</h1>
+                        <p className="text-secondary mb-0">Crear, editar y gestionar usuarios del sistema.</p>
                     </div>
+
+                    {mensaje && <div className={`alert alert-${mensaje.tipo}`} role={mensaje.tipo === 'danger' ? 'alert' : 'status'}>{mensaje.texto}</div>}
 
                     <div className="row g-4">
                         {/* FORMULARIO */}
                         <div className="col-lg-5">
-                            <form onSubmit={handleSubmit} className="bg-dark p-4 rounded shadow-sm border border-secondary">
+                            <form onSubmit={handleSubmit} noValidate className="bg-dark p-4 rounded shadow-sm border border-secondary">
+                                <h5 className="text-warning mb-3">{editando ? 'Editar usuario' : 'Nuevo usuario'}</h5>
+                                {input('nombre', 'Nombre', 'text', { maxLength: 25 })}
+                                {input('apellidos', 'Apellidos', 'text', { maxLength: 30 })}
+                                {input('run', 'RUN', 'text', { maxLength: 10, placeholder: '12345678-9' })}
+                                {input('correo', 'Correo', 'email', { maxLength: 100 })}
+                                {input('password', editando ? 'Contraseña (dejar vacía para no cambiarla)' : 'Contraseña', 'password')}
+
                                 <div className="mb-3">
-                                    <label className="form-label text-light">Nombre</label>
-                                    <input type="text" name="nombre" className="form-control bg-dark text-light" value={formData.nombre} onChange={handleChange} required />
-                                </div>
-                                <div className="mb-3">
-                                    <label className="form-label text-light">Apellidos</label>
-                                    <input type="text" name="apellidos" className="form-control bg-dark text-light" value={formData.apellidos} onChange={handleChange} />
-                                </div>
-                                <div className="mb-3">
-                                    <label className="form-label text-light">RUN</label>
-                                    <input type="text" name="run" className="form-control bg-dark text-light" value={formData.run} onChange={handleChange} />
-                                </div>
-                                <div className="mb-3">
-                                    <label className="form-label text-light">Correo</label>
-                                    <input type="email" name="correo" className="form-control bg-dark text-light" value={formData.correo} onChange={handleChange} required />
-                                </div>
-                                <div className="mb-3">
-                                    <label className="form-label text-light">Contraseña</label>
-                                    <input type="password" name="password" className="form-control bg-dark text-light" value={formData.password} onChange={handleChange} required />
-                                </div>
-                                <div className="mb-3">
-                                    <label className="form-label text-light">Tipo de usuario</label>
-                                    <select name="tipoUsuario" className="form-select bg-dark text-light" value={formData.tipoUsuario} onChange={handleChange} required>
-                                        <option value="Cliente">Cliente</option>
-                                        <option value="Administrador">Administrador</option>
-                                        <option value="Vendedor">Vendedor</option>
+                                    <label htmlFor="usuario-tipoUsuario" className="form-label text-light">Tipo de usuario</label>
+                                    <select
+                                        id="usuario-tipoUsuario"
+                                        name="tipoUsuario"
+                                        className="form-select bg-dark text-light"
+                                        value={formData.tipoUsuario}
+                                        onChange={handleChange}
+                                        disabled={editando && formData.usuarioId === actual?.usuarioId}
+                                    >
+                                        <option value={ROLES.USER}>{NOMBRE_ROL.USER}</option>
+                                        <option value={ROLES.VENDEDOR}>{NOMBRE_ROL.VENDEDOR}</option>
+                                        <option value={ROLES.ADMIN}>{NOMBRE_ROL.ADMIN}</option>
                                     </select>
                                 </div>
 
                                 <div className="d-flex gap-2 flex-wrap">
-                                    <button type="submit" className="btn btn-warning">
-                                        {formData.id ? 'Actualizar usuario' : 'Guardar usuario'}
+                                    <button type="submit" className="btn btn-warning" disabled={guardando}>
+                                        {guardando ? 'Guardando...' : editando ? 'Actualizar usuario' : 'Guardar usuario'}
                                     </button>
-                                    {formData.id && (
+                                    {editando && (
                                         <button type="button" onClick={limpiarFormulario} className="btn btn-outline-light">
                                             Cancelar
                                         </button>
@@ -172,42 +191,54 @@ function AdminUsuarios() {
 
                         {/* TABLA */}
                         <div className="col-lg-7">
-                            <div className="table-responsive bg-dark rounded border border-secondary shadow-sm">
-                                <table className="table table-dark table-striped align-middle mb-0">
-                                    <thead>
-                                        <tr>
-                                            <th>Nombre</th>
-                                            <th>Correo</th>
-                                            <th>Tipo</th>
-                                            <th>Acciones</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {usuarios.map((user) => (
-                                            <tr key={user.id}>
-                                                <td>{user.nombre} {user.apellidos || ''}</td>
-                                                <td>{user.correo}</td>
-                                                <td>
-                                                    <span className="badge bg-secondary">{user.tipoUsuario}</span>
-                                                </td>
-                                                <td>
-                                                    <div className="d-flex gap-2">
-                                                        <button onClick={() => handleEditar(user)} className="btn btn-warning btn-sm">Editar</button>
-                                                        <button onClick={() => handleEliminar(user.id, user.correo)} className="btn btn-danger btn-sm">Eliminar</button>
-                                                    </div>
-                                                </td>
+                            <EstadoCarga cargando={cargando && !usuarios} error={error} onReintentar={recargar} texto="Cargando usuarios..." />
+
+                            {usuarios && (
+                                <div className="table-responsive bg-dark rounded border border-secondary shadow-sm">
+                                    <table className="table table-dark table-striped align-middle mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th>Nombre</th>
+                                                <th>Correo</th>
+                                                <th>RUN</th>
+                                                <th>Tipo</th>
+                                                <th>Acciones</th>
                                             </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
+                                        </thead>
+                                        <tbody>
+                                            {usuarios.map((u) => {
+                                                const esYo = u.usuarioId === actual?.usuarioId;
+                                                return (
+                                                    <tr key={u.usuarioId}>
+                                                        <td>{u.nombre} {u.apellidos || ''} {esYo && <span className="badge bg-warning text-dark">Tú</span>}</td>
+                                                        <td>{u.correo}</td>
+                                                        <td>{u.run}</td>
+                                                        <td>
+                                                            <span className={`badge ${COLOR_ROL[u.tipoUsuario] || 'bg-secondary'}`}>
+                                                                {NOMBRE_ROL[u.tipoUsuario] || u.tipoUsuario}
+                                                            </span>
+                                                        </td>
+                                                        <td>
+                                                            <div className="d-flex gap-2">
+                                                                <button onClick={() => handleEditar(u)} className="btn btn-warning btn-sm">Editar</button>
+                                                                {!esYo && (
+                                                                    <button onClick={() => handleEliminar(u)} className="btn btn-danger btn-sm">Eliminar</button>
+                                                                )}
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
                         </div>
                     </div>
-
                 </div>
             </main>
         </>
     );
 }
 
-export default AdminUsuarios;
+export default AdminUsuarios;

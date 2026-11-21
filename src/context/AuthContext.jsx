@@ -17,8 +17,8 @@ export function AuthProvider({ children }) {
         // Si el refresh token también expiró, api.js avisa y se cierra la sesión
         registrarAlExpirarSesion(() => setUsuario(null));
 
+        // Sin token guardado no hay nada que validar (cargando ya parte en false)
         if (!almacenSesion.obtenerToken()) {
-            setCargando(false);
             return;
         }
 
