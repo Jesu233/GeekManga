@@ -1,18 +1,23 @@
-// src/pages/Checkout.jsx
+// src/pages/Pago.jsx
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { useCarrito } from '../context/CarritoContext';
+import { useAuth } from '../context/AuthContext';
+import { crearBoleta } from '../services/boletaService';
+import { mensajeDeError } from '../services/api';
+import { formatoPrecio, imagenProducto } from '../services/formato';
 import { PATHS } from '../routes/paths';
 
-function Checkout() {
+function Pago() {
     const { carrito, precioTotal, vaciarCarrito } = useCarrito();
+    const { usuario } = useAuth();
     const navigate = useNavigate();
 
-    // Datos del formulario
+    // Datos de entrega. Nombre y correo se completan con los datos de la sesión.
     const [formData, setFormData] = useState({
-        nombre: '',
+        nombre: usuario?.nombre ?? '',
         apellido: '',
-        correo: '',
+        correo: usuario?.correo ?? '',
         calle: '',
         departamento: '',
         region: 'Región Metropolitana de Santiago',
@@ -20,8 +25,8 @@ function Checkout() {
         indicaciones: ''
     });
 
-    // Manejo de errores visuales
     const [errores, setErrores] = useState({});
+    const [procesando, setProcesando] = useState(false);
 
     // Si el carrito está vacío, no permitimos comprar
     if (carrito.length === 0) {
@@ -35,17 +40,14 @@ function Checkout() {
         );
     }
 
-    // Actualizar campos
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData({ ...formData, [name]: value });
-        // Limpiar error del campo que se está editando
         if (errores[name]) {
             setErrores({ ...errores, [name]: null });
         }
     };
 
-    // Validar formulario
     const validar = () => {
         const nuevosErrores = {};
         if (!formData.nombre.trim()) nuevosErrores.nombre = 'El nombre es obligatorio';
@@ -53,40 +55,30 @@ function Checkout() {
         if (!formData.correo.trim()) nuevosErrores.correo = 'El correo es obligatorio';
         if (!formData.calle.trim()) nuevosErrores.calle = 'La calle es obligatoria';
         if (!formData.comuna.trim()) nuevosErrores.comuna = 'La comuna es obligatoria';
-        
-        // Validación simple de email
         if (formData.correo && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.correo)) {
             nuevosErrores.correo = 'Correo inválido';
         }
-        
         setErrores(nuevosErrores);
         return Object.keys(nuevosErrores).length === 0;
     };
 
-    // Simular pago
-    const handlePagar = (e) => {
+    // Pago: POST /api/v1/boleta con los productos y cantidades del carrito.
+    // El backend valida el stock, calcula el total con los precios reales y descuenta el stock.
+    const handlePagar = async (e) => {
         e.preventDefault();
-
         if (!validar()) return;
 
-        // Simulamos un pago: si el correo contiene "error", falla
-        const pagoExitoso = !formData.correo.toLowerCase().includes('error');
-
-        if (pagoExitoso) {
-            // Guardar orden de compra (simulada)
-            const orden = {
-                id: `ORD-${Date.now()}`,
-                fecha: new Date().toISOString(),
-                cliente: formData,
-                items: carrito,
-                total: precioTotal
-            };
-            localStorage.setItem('geekmanga_ultima_orden', JSON.stringify(orden));
-            
+        setProcesando(true);
+        try {
+            const boleta = await crearBoleta(carrito);
             vaciarCarrito();
-            navigate(PATHS.PAGO_EXITOSO);
-        } else {
-            navigate(PATHS.PAGO_ERROR);
+            navigate(PATHS.PAGO_EXITOSO, { state: { boleta, envio: formData } });
+        } catch (error) {
+            navigate(PATHS.PAGO_ERROR, {
+                state: { mensaje: mensajeDeError(error, 'No se pudo procesar el pago.') },
+            });
+        } finally {
+            setProcesando(false);
         }
     };
 
@@ -105,7 +97,7 @@ function Checkout() {
                     <div className="d-flex justify-content-between align-items-center mb-4">
                         <h2 className="mb-0">Carrito de compra</h2>
                         <span className="badge bg-primary fs-6">
-                            Total a pagar: ${precioTotal.toLocaleString('es-CL')}
+                            Total a pagar: {formatoPrecio(precioTotal)}
                         </span>
                     </div>
 
@@ -126,31 +118,30 @@ function Checkout() {
                                     <tr key={item.id}>
                                         <td>
                                             <img
-                                                src={item.foto}
+                                                src={imagenProducto(item)}
                                                 alt={item.producto}
                                                 style={{ width: '50px', height: '50px', objectFit: 'cover', borderRadius: '5px' }}
                                             />
                                         </td>
                                         <td>{item.producto}</td>
-                                        <td>${item.precio.toLocaleString('es-CL')}</td>
+                                        <td>{formatoPrecio(item.precio)}</td>
                                         <td>{item.cantidad}</td>
-                                        <td className="fw-bold">
-                                            ${(item.precio * item.cantidad).toLocaleString('es-CL')}
-                                        </td>
+                                        <td className="fw-bold">{formatoPrecio(item.precio * item.cantidad)}</td>
                                     </tr>
                                 ))}
                             </tbody>
                         </table>
                     </div>
 
-                    <form onSubmit={handlePagar}>
+                    <form onSubmit={handlePagar} noValidate>
                         <h4 className="mb-3">Información del cliente</h4>
                         <p className="text-muted mb-3">Completa la siguiente información</p>
 
                         <div className="row g-3 mb-4">
                             <div className="col-md-6">
-                                <label className="form-label">Nombre*</label>
+                                <label htmlFor="nombre" className="form-label">Nombre*</label>
                                 <input
+                                    id="nombre"
                                     type="text"
                                     name="nombre"
                                     className={`form-control ${errores.nombre ? 'is-invalid' : ''}`}
@@ -160,8 +151,9 @@ function Checkout() {
                                 {errores.nombre && <div className="invalid-feedback">{errores.nombre}</div>}
                             </div>
                             <div className="col-md-6">
-                                <label className="form-label">Apellidos*</label>
+                                <label htmlFor="apellido" className="form-label">Apellidos*</label>
                                 <input
+                                    id="apellido"
                                     type="text"
                                     name="apellido"
                                     className={`form-control ${errores.apellido ? 'is-invalid' : ''}`}
@@ -171,8 +163,9 @@ function Checkout() {
                                 {errores.apellido && <div className="invalid-feedback">{errores.apellido}</div>}
                             </div>
                             <div className="col-12">
-                                <label className="form-label">Correo*</label>
+                                <label htmlFor="correo" className="form-label">Correo*</label>
                                 <input
+                                    id="correo"
                                     type="email"
                                     name="correo"
                                     className={`form-control ${errores.correo ? 'is-invalid' : ''}`}
@@ -180,9 +173,6 @@ function Checkout() {
                                     onChange={handleChange}
                                 />
                                 {errores.correo && <div className="invalid-feedback">{errores.correo}</div>}
-                                <small className="text-muted">
-                                    Tip para probar: si el correo contiene la palabra "error", el pago fallará.
-                                </small>
                             </div>
                         </div>
 
@@ -191,8 +181,9 @@ function Checkout() {
 
                         <div className="row g-3 mb-4">
                             <div className="col-md-8">
-                                <label className="form-label">Calle*</label>
+                                <label htmlFor="calle" className="form-label">Calle*</label>
                                 <input
+                                    id="calle"
                                     type="text"
                                     name="calle"
                                     className={`form-control ${errores.calle ? 'is-invalid' : ''}`}
@@ -202,8 +193,9 @@ function Checkout() {
                                 {errores.calle && <div className="invalid-feedback">{errores.calle}</div>}
                             </div>
                             <div className="col-md-4">
-                                <label className="form-label">Departamento (opcional)</label>
+                                <label htmlFor="departamento" className="form-label">Departamento (opcional)</label>
                                 <input
+                                    id="departamento"
                                     type="text"
                                     name="departamento"
                                     className="form-control"
@@ -212,8 +204,9 @@ function Checkout() {
                                 />
                             </div>
                             <div className="col-md-6">
-                                <label className="form-label">Región*</label>
+                                <label htmlFor="region" className="form-label">Región*</label>
                                 <select
+                                    id="region"
                                     name="region"
                                     className="form-select"
                                     value={formData.region}
@@ -226,8 +219,9 @@ function Checkout() {
                                 </select>
                             </div>
                             <div className="col-md-6">
-                                <label className="form-label">Comuna*</label>
+                                <label htmlFor="comuna" className="form-label">Comuna*</label>
                                 <input
+                                    id="comuna"
                                     type="text"
                                     name="comuna"
                                     className={`form-control ${errores.comuna ? 'is-invalid' : ''}`}
@@ -237,8 +231,9 @@ function Checkout() {
                                 {errores.comuna && <div className="invalid-feedback">{errores.comuna}</div>}
                             </div>
                             <div className="col-12">
-                                <label className="form-label">Indicaciones para la entrega (opcional)</label>
+                                <label htmlFor="indicaciones" className="form-label">Indicaciones para la entrega (opcional)</label>
                                 <textarea
+                                    id="indicaciones"
                                     name="indicaciones"
                                     className="form-control"
                                     rows="2"
@@ -249,8 +244,8 @@ function Checkout() {
                         </div>
 
                         <div className="text-end">
-                            <button type="submit" className="btn btn-success btn-lg">
-                                Pagar ahora ${precioTotal.toLocaleString('es-CL')}
+                            <button type="submit" className="btn btn-success btn-lg" disabled={procesando}>
+                                {procesando ? 'Procesando pago...' : `Pagar ahora ${formatoPrecio(precioTotal)}`}
                             </button>
                         </div>
                     </form>
@@ -260,4 +255,4 @@ function Checkout() {
     );
 }
 
-export default Checkout;
+export default Pago;

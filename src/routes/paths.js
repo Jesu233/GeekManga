@@ -12,10 +12,12 @@ export const PATHS = {
     REGISTRARSE: "/registro",
     PRODUCTOS_ROUTE: '/productos/:id',
     PRODUCTO_DETALLE: (id) => `/productos/${id}`,
-    CATEGORIA_DETALLE: (nombre) => `/categoria/${nombre}`,
+    CATEGORIA_DETALLE_ROUTE: '/categorias/:id',
+    CATEGORIA_DETALLE: (id) => `/categorias/${id}`,
     PAGO: '/pago',
     PAGO_EXITOSO: '/pago-exitoso',
     PAGO_ERROR: '/pago-error',
+    MIS_COMPRAS: '/mis-compras',
 
     // Administración
     ADMIN: '/admin',

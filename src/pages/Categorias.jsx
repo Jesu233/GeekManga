@@ -1,22 +1,20 @@
 // src/pages/Categorias.jsx
-import { useState, useEffect } from 'react';
 import { Link } from 'react-router';
-import { categoryDB, productDB } from '../data/BaseDeDatos';
+import EstadoCarga from '../components/EstadoCarga';
+import { useApi } from '../hooks/useApi';
+import { listarCategorias } from '../services/categoriaService';
+import { listarProductos } from '../services/productoService';
+import { PATHS } from '../routes/paths';
 
+// Se piden categorías y productos en paralelo para mostrar cuántos productos tiene cada una
+const cargarDatos = () => Promise.all([listarCategorias(), listarProductos()])
+    .then(([categorias, productos]) => ({ categorias, productos }));
 
 function Categorias() {
-    const [categorias, setCategorias] = useState([]);
-    const [productos, setProductos] = useState([]);
+    const { datos, cargando, error, recargar } = useApi(cargarDatos);
 
-    useEffect(() => {
-        setCategorias(categoryDB.getAll());
-        setProductos(productDB.getAll());
-    }, []);
-
-    
-    const contarProductos = (nombreCategoria) => {
-        return productos.filter(p => p.categoria === nombreCategoria).length;
-    };
+    const contarProductos = (categoriaId) =>
+        datos.productos.filter((p) => p.categoria?.categoriaId === categoriaId).length;
 
     return (
         <main className="container my-5">
@@ -29,24 +27,27 @@ function Categorias() {
 
             <h1 className="text-center mb-5">Categorías</h1>
 
-            <div className="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
-                {categorias.map((cat) => (
-                    <div className="col" key={cat.id}>
-                        <div className="card h-100 shadow-sm text-center">
-                            <div className="card-body">
-                                <h3 className="card-title">{cat.nombre}</h3>
-                                <p className="text-muted">
-                                    {contarProductos(cat.nombre)} producto(s)
-                                </p>
-                                <Link 
-                                    to={`/categorias/${cat.nombre}`} className="btn btn-warning">
+            <EstadoCarga cargando={cargando} error={error} onReintentar={recargar} texto="Cargando categorías..." />
+
+            {!cargando && !error && (
+                <div className="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                    {datos.categorias.map((cat) => (
+                        <div className="col" key={cat.categoriaId}>
+                            <div className="card h-100 shadow-sm text-center">
+                                <div className="card-body">
+                                    <h3 className="card-title">{cat.nombreCategoria}</h3>
+                                    <p className="text-muted">
+                                        {contarProductos(cat.categoriaId)} producto(s)
+                                    </p>
+                                    <Link to={PATHS.CATEGORIA_DETALLE(cat.categoriaId)} className="btn btn-warning">
                                         Ver productos
-                                </Link>
+                                    </Link>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                ))}
-            </div>
+                    ))}
+                </div>
+            )}
         </main>
     );
 }

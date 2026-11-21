@@ -3,11 +3,15 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import Carrito from '../src/pages/Carrito';
 import { useCarrito } from '../src/context/CarritoContext';
+import { useAuth } from '../src/context/AuthContext';
 import { PATHS } from '../src/routes/paths';
 
-// Mock del contexto: la página se prueba aislada, sin Provider ni localStorage
+// Mock de los contextos: la página se prueba aislada, sin Provider ni localStorage
 vi.mock('../src/context/CarritoContext', () => ({
     useCarrito: vi.fn(),
+}));
+vi.mock('../src/context/AuthContext', () => ({
+    useAuth: vi.fn(() => ({ usuario: null })),
 }));
 
 const items = [
@@ -19,6 +23,7 @@ const crearContexto = (extra = {}) => ({
     carrito: items,
     precioTotal: 95000, // 2 x 10.000 + 3 x 25.000
     agregarAlCarrito: vi.fn(),
+    disminuirCantidad: vi.fn(),
     quitarDelCarrito: vi.fn(),
     vaciarCarrito: vi.fn(),
     ...extra,
@@ -88,6 +93,32 @@ describe('Página Carrito', () => {
         await user.click(botonesVaciar[botonesVaciar.length - 1]);
 
         expect(contexto.vaciarCarrito).toHaveBeenCalledTimes(1);
+    });
+
+    it('los botones + y − cambian la cantidad', async () => {
+        const contexto = crearContexto();
+        useCarrito.mockReturnValue(contexto);
+        const user = userEvent.setup();
+
+        renderCarrito();
+        await user.click(screen.getByRole('button', { name: 'Agregar una unidad de One Piece - Tomo 1' }));
+        await user.click(screen.getByRole('button', { name: 'Quitar una unidad de Figura Luffy' }));
+
+        expect(contexto.agregarAlCarrito).toHaveBeenCalledWith(items[0]);
+        expect(contexto.disminuirCantidad).toHaveBeenCalledWith('f1');
+    });
+
+    it('avisa que se pedirá iniciar sesión si no hay sesión', () => {
+        useCarrito.mockReturnValue(crearContexto());
+        renderCarrito();
+        expect(screen.getByText('Para comprar te pediremos iniciar sesión.')).toBeInTheDocument();
+    });
+
+    it('no muestra el aviso si el usuario ya inició sesión', () => {
+        useAuth.mockReturnValue({ usuario: { nombre: 'Ana', rol: 'USER' } });
+        useCarrito.mockReturnValue(crearContexto());
+        renderCarrito();
+        expect(screen.queryByText('Para comprar te pediremos iniciar sesión.')).not.toBeInTheDocument();
     });
 
     it('incluye los enlaces para seguir comprando y para ir al pago', () => {

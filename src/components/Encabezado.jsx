@@ -80,6 +80,9 @@ function Encabezado() {
                                             {usuario.correo} · {NOMBRE_ROL[usuario.rol] || usuario.rol}
                                         </NavDropdown.ItemText>
                                         <NavDropdown.Divider />
+                                        <NavDropdown.Item as={Link} to={PATHS.MIS_COMPRAS}>
+                                            Mis compras
+                                        </NavDropdown.Item>
                                         <NavDropdown.Item as="button" onClick={cerrarSesion}>
                                             Cerrar sesión
                                         </NavDropdown.Item>

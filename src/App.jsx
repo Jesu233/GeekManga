@@ -15,6 +15,7 @@ import Ofertas from './pages/Ofertas';
 import Pago from './pages/Pago';
 import PagoExitoso from './pages/PagoExitoso';
 import PagoError from './pages/PagoError';
+import MisCompras from './pages/MisCompras';
 import { PATHS } from './routes/paths';
 import { ROLES } from './services/roles';
 import Login from './pages/Login';
@@ -48,7 +49,7 @@ function App() {
                         <Route path={PATHS.PRODUCTOS_ROUTE} element={<DetalleProducto/>} />
                         <Route path={PATHS.OFERTAS} element={<Ofertas/>} />
                         <Route path={PATHS.CATEGORIAS} element={<Categorias/>} />
-                        <Route path="/categorias/:nombre" element={<CategoriaDetalle/>} />
+                        <Route path={PATHS.CATEGORIA_DETALLE_ROUTE} element={<CategoriaDetalle/>} />
                         <Route path={PATHS.NOSOTROS} element={<Nosotros/>} />
                         <Route path={PATHS.CARRITO} element={<Carrito/>}/>
                         <Route path={PATHS.LOGIN} element={<Login/>}/>
@@ -59,6 +60,7 @@ function App() {
                         <Route path={PATHS.PAGO} element={<RutaProtegida><Pago /></RutaProtegida>} />
                         <Route path={PATHS.PAGO_EXITOSO} element={<RutaProtegida><PagoExitoso /></RutaProtegida>} />
                         <Route path={PATHS.PAGO_ERROR} element={<PagoError />} />
+                        <Route path={PATHS.MIS_COMPRAS} element={<RutaProtegida><MisCompras /></RutaProtegida>} />
 
                         {/* Panel de administración: ADMIN y VENDEDOR */}
                         <Route path={PATHS.ADMIN} element={<RutaProtegida roles={STAFF}><AdminPanel/></RutaProtegida>}/>

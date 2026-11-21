@@ -1,13 +1,12 @@
 import { Link } from 'react-router';
 import { useCarrito } from '../context/CarritoContext';
+import { useAuth } from '../context/AuthContext';
+import { formatoPrecio, imagenProducto } from '../services/formato';
 import { PATHS } from '../routes/paths';
 
 function Carrito() {
-    // Traemos todo lo necesario del contexto
-    const { carrito, precioTotal, agregarAlCarrito, quitarDelCarrito, vaciarCarrito } = useCarrito();
-
-    // Función simple para vaciar (debes agregarla a tu contexto luego)
-    // const { vaciarCarrito } = useCarrito(); 
+    const { carrito, precioTotal, agregarAlCarrito, disminuirCantidad, quitarDelCarrito, vaciarCarrito } = useCarrito();
+    const { usuario } = useAuth();
 
     if (carrito.length === 0) {
         return (
@@ -30,10 +29,8 @@ function Carrito() {
             <section className="carrito-shell">
                 <div className="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
                     <h1 className="mb-0">Mi carrito</h1>
-                
                 </div>
 
-                {/* Tabla del carrito en React */}
                 <div className="table-responsive bg-white p-3 rounded shadow-sm">
                     <table className="table align-middle">
                         <thead>
@@ -50,18 +47,37 @@ function Carrito() {
                                 <tr key={item.id}>
                                     <td>
                                         <div className="d-flex align-items-center gap-3">
-                                            <img src={item.foto} alt={item.producto} style={{ width: '60px', height: '60px', objectFit: 'cover', borderRadius: '5px' }} />
+                                            <img src={imagenProducto(item)} alt={item.producto} style={{ width: '60px', height: '60px', objectFit: 'cover', borderRadius: '5px' }} />
                                             <div>
                                                 <h6 className="mb-0">{item.producto}</h6>
                                                 <small className="text-muted">{item.marca}</small>
                                             </div>
                                         </div>
                                     </td>
-                                    <td>${item.precio.toLocaleString('es-CL')}</td>
-                                    <td>{item.cantidad}</td>
-                                    <td className="fw-bold">${(item.precio * item.cantidad).toLocaleString('es-CL')}</td>
                                     <td>
-                                        <button className="btn btn-sm btn-danger" onClick={() => quitarDelCarrito(item.id)}>❌</button></td>
+                                        {item.precioNormal > item.precio && (
+                                            <small className="text-muted text-decoration-line-through d-block">
+                                                {formatoPrecio(item.precioNormal)}
+                                            </small>
+                                        )}
+                                        {formatoPrecio(item.precio)}
+                                    </td>
+                                    <td>
+                                        <div className="d-flex align-items-center gap-2">
+                                            <button className="btn btn-sm btn-outline-dark" aria-label={`Quitar una unidad de ${item.producto}`} onClick={() => disminuirCantidad(item.id)}>−</button>
+                                            <span>{item.cantidad}</span>
+                                            <button
+                                                className="btn btn-sm btn-outline-dark"
+                                                aria-label={`Agregar una unidad de ${item.producto}`}
+                                                onClick={() => agregarAlCarrito(item)}
+                                                disabled={item.stock != null && item.cantidad >= item.stock}
+                                            >+</button>
+                                        </div>
+                                    </td>
+                                    <td className="fw-bold">{formatoPrecio(item.precio * item.cantidad)}</td>
+                                    <td>
+                                        <button className="btn btn-sm btn-danger" onClick={() => quitarDelCarrito(item.id)}>❌</button>
+                                    </td>
                                 </tr>
                             ))}
                         </tbody>
@@ -70,12 +86,16 @@ function Carrito() {
 
                 <div className="d-flex justify-content-end mt-4 fs-4 fw-bold">
                     <span className="me-3">Total:</span>
-                    <span>${precioTotal.toLocaleString('es-CL')}</span>
+                    <span>{formatoPrecio(precioTotal)}</span>
                 </div>
+
+                {!usuario && (
+                    <p className="text-end text-muted mb-0">Para comprar te pediremos iniciar sesión.</p>
+                )}
 
                 <div className="mt-4 d-flex justify-content-between align-items-center flex-wrap gap-3">
                     <Link to="/productos" className="btn btn-outline-dark btn-lg">Seguir comprando</Link>
-                    <Link to= {PATHS.PAGO} className="btn btn-warning btn-lg">Comprar</Link>
+                    <Link to={PATHS.PAGO} className="btn btn-warning btn-lg">Comprar</Link>
                     <button className="btn btn-outline-dark" onClick={vaciarCarrito}>Vaciar carrito</button>
                 </div>
             </section>

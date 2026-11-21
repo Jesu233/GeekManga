@@ -1,9 +1,11 @@
 // src/pages/PagoError.jsx
-import { Link, useNavigate } from 'react-router';
+import { Link, useLocation, useNavigate } from 'react-router';
 import { PATHS } from '../routes/paths';
 
 function PagoError() {
     const navigate = useNavigate();
+    // Mensaje que devolvió el backend (por ejemplo "No hay suficiente stock para ...")
+    const mensaje = useLocation().state?.mensaje;
 
     return (
         <main className="container my-5 text-center">
@@ -11,9 +13,9 @@ function PagoError() {
                 <div className="card-body p-5">
                     <div className="display-1 text-danger mb-3">❌</div>
                     <h1 className="text-danger mb-3">No se pudo realizar el pago</h1>
-                    <p className="lead">Hubo un problema al procesar tu pago.</p>
+                    <p className="lead">{mensaje || 'Hubo un problema al procesar tu pago.'}</p>
                     <p className="text-muted">
-                        Por favor, verifica tus datos e inténtalo nuevamente.
+                        Revisa tu carrito e inténtalo nuevamente.
                     </p>
 
                     <div className="d-flex gap-2 justify-content-center mt-4">
