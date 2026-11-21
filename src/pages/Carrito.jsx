@@ -30,8 +30,7 @@ function Carrito() {
             <section className="carrito-shell">
                 <div className="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
                     <h1 className="mb-0">Mi carrito</h1>
-                    {/* El botón de vaciar lo podemos implementar luego */}
-                    <button className="btn btn-outline-dark" type="button">Vaciar carrito</button>
+                
                 </div>
 
                 {/* Tabla del carrito en React */}
@@ -43,6 +42,7 @@ function Carrito() {
                                 <th>Precio</th>
                                 <th>Cantidad</th>
                                 <th>Subtotal</th>
+                                <th></th>
                             </tr>
                         </thead>
                         <tbody>
